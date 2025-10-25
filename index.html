@@ -1,3 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beam Earn - Earn Money Daily</title>
+    <style>
+        :root {
+            --primary: #7E57C2;
+            --primary-dark: #5E35B1;
+            --secondary: #FF4081;
+            --accent: #00E5FF;
+            --success: #00C853;
+            --warning: #FF9100;
+            --danger: #FF1744;
+            --dark: #1A237E;
+            --light: #E8EAF6;
+            --white: #FFFFFF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--white);
+            padding: 1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .main {
+            margin-top: 80px;
+            padding: 1rem;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-bottom: 80px;
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            display: block;
+            width: 100%;
+            margin: 0.5rem 0;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--primary), var(--primary-dark));
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(126, 87, 194, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, var(--success), #00E676);
+            color: var(--white);
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, var(--warning), #FF6D00);
+            color: var(--white);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, var(--danger), #D50000);
+            color: var(--white);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: var(--white);
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .stat-amount {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .level-card {
+            background: var(--white);
+            border: 3px solid var(--light);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .level-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .level-card.premium {
+            border-color: var(--secondary);
             background: linear-gradient(135deg, #FFF, #FFEBEE);
         }
 
@@ -96,16 +273,35 @@
             color: var(--dark);
         }
 
-        .payment-number {
-            background: linear-gradient(45deg, var(--success), #00E676);
-            color: white;
-            padding: 1.5rem;
-            border-radius: 15px;
+        /* NEW PAYMENT STYLES */
+        .payment-instructions {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #2c5aa0;
+        }
+
+        .merchant-code-display {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
             text-align: center;
-            font-size: 1.5rem;
+            margin: 15px 0;
             font-weight: bold;
-            margin: 1.5rem 0;
-            box-shadow: 0 5px 15px rgba(0,200,83,0.3);
+            font-size: 18px;
+        }
+
+        .success-message {
+            display: none;
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+            border: 1px solid #c3e6cb;
         }
 
         .support-section {
@@ -452,13 +648,13 @@
                 <p>Our support team is here to assist you 24/7</p>
                 
                 <div class="support-contact">
-                    💬 Telegram: @Beam_earn
+                    💬 Telegram: @MyBusinessSupportBot
                 </div>
                 
                 <p>⏰ Response time: Within 2 hours</p>
                 
-                <button class="btn btn-warning" onclick="openTelegram()" style="margin-top: 1rem;">
-                    ✈️ Message on Telegram
+                <button class="btn btn-warning" onclick="openSupportTelegram()" style="margin-top: 1rem;">
+                    ✈️ Message Support Bot
                 </button>
             </div>
 
@@ -524,6 +720,13 @@
     </div>
 
     <script>
+        // Telegram Bot Configuration
+        const PAYMENT_BOT_TOKEN = '8006710876:AAGdS6OrwcOAkOIKL-L3qSba2oYEyIyb-Qw';
+        const SUPPORT_BOT_TOKEN = '8336295386:AAGwWLP81bpW3dxZKl8iLqrno1vj5WVKko0';
+        const ADMIN_CHAT_ID = '6254171731';
+        const MERCHANT_CODE = '6911104';
+        const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1Kxa3spw27A-6GHVFw7ZvQAdSZVMOYZKxR-C4zNBtfSg/edit?usp=drivesdk';
+
         // Data Management
         let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
         let users = JSON.parse(localStorage.getItem('users')) || [];
@@ -589,7 +792,57 @@
             checkAuthStatus();
             loadTransactionHistory();
             startCountdownTimer();
+            checkPendingPayments();
         });
+
+        // NEW: Check for pending payment approvals
+        function checkPendingPayments() {
+            if (!currentUser) return;
+            
+            const userPendingPayments = pendingPayments.filter(
+                payment => payment.userId === currentUser.id && payment.status === 'approved'
+            );
+            
+            userPendingPayments.forEach(payment => {
+                // Upgrade user level
+                currentUser.level = payment.level.toLowerCase();
+                users = users.map(u => u.id === currentUser.id ? currentUser : u);
+                localStorage.setItem('users', JSON.stringify(users));
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                // Update payment status to completed
+                payment.status = 'completed';
+                localStorage.setItem('pendingPayments', JSON.stringify(pendingPayments));
+                
+                showSuccess(`🎉 Your ${payment.level} level has been activated! You can now access premium features.`);
+                updateUserStats();
+            });
+        }
+
+        // NEW: Send Telegram Notification Function
+        async function sendTelegramNotification(message, isSupport = false) {
+            const botToken = isSupport ? SUPPORT_BOT_TOKEN : PAYMENT_BOT_TOKEN;
+            
+            try {
+                const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: ADMIN_CHAT_ID,
+                        text: message,
+                        parse_mode: 'HTML'
+                    })
+                });
+                
+                const data = await response.json();
+                return data.ok;
+            } catch (error) {
+                console.error('Telegram API Error:', error);
+                return false;
+            }
+        }
 
         // Authentication Functions
         function showAuth(type) {
@@ -702,6 +955,10 @@
             currentUser = user;
             localStorage.setItem('currentUser', JSON.stringify(user));
             
+            // Send welcome notification to Telegram
+            const welcomeMessage = `👤 <b>New User Registration</b>\nName: ${name}\nPhone: ${phone}\nReferral Code: ${userReferralCode}\nTime: ${new Date().toLocaleString()}`;
+            sendTelegramNotification(welcomeMessage, false);
+            
             showSuccess('Welcome to Beam Earn! 🎉 You have 2 days FREE intern access!');
             hideAuth();
             checkAuthStatus();
@@ -726,6 +983,7 @@
                 hideAuth();
                 showSuccess(`Welcome back, ${user.name}! 👋`);
                 startCountdownTimer();
+                checkPendingPayments();
             } else {
                 showSuccess('Invalid phone number or password!', 'error');
             }
@@ -1022,7 +1280,7 @@
             }, 1000);
         }
 
-        // Deposit System
+        // UPDATED: Deposit System with Merchant Code and Telegram Integration
         function showDepositModal(level, amount) {
             if (!currentUser) {
                 showSuccess('Please login first!', 'error');
@@ -1036,24 +1294,52 @@
                 <h3 class="text-center" style="color: var(--primary);">Upgrade to ${level} 💫</h3>
                 <p class="text-center">Investment Amount: <strong>${amount.toLocaleString()} UGX</strong></p>
                 
-                <div class="payment-number">
-                    📞 0707275939
-                </div>
-                
-                <div style="background: var(--light); padding: 1rem; border-radius: 10px; margin: 1rem 0;">
-                    <h4>📋 Payment Instructions:</h4>
-                    <ol style="text-align: left; margin: 1rem;">
-                        <li>Send <strong>${amount.toLocaleString()} UGX</strong> to <strong>0707275939</strong></li>
-                        <li>Include your name as reference</li>
-                        <li>Take screenshot of transaction</li>
-                        <li>Click "I Have Paid" below</li>
-                        <li>Wait 24 hours for approval</li>
-                        <li>We'll activate your ${level} level</li>
+                <div class="payment-instructions">
+                    <h4>📱 How to Pay via Airtel Money:</h4>
+                    <ol>
+                        <li>Open <strong>Airtel Money</strong> on your phone</li>
+                        <li>Select <strong>"Pay Bill"</strong> or <strong>"Pay Merchant"</strong></li>
+                        <li>Choose <strong>"Other"</strong> or <strong>"Enter Merchant Code"</strong></li>
+                        <li>Enter Merchant Code: <strong style="color: #d63031;">${MERCHANT_CODE}</strong></li>
+                        <li>Input Amount: <strong>${amount.toLocaleString()} UGX</strong></li>
+                        <li>Use your <strong>name</strong> as reference</li>
+                        <li>Complete the payment</li>
                     </ol>
                 </div>
+
+                <div class="merchant-code-display">
+                    🏪 Merchant Code: <span style="color: #d63031; font-size: 24px;">${MERCHANT_CODE}</span>
+                </div>
+
+                <form id="modalPaymentForm">
+                    <div class="input-group">
+                        <label>👤 Your Full Name:</label>
+                        <input type="text" id="modalName" class="input" value="${currentUser.name}" readonly>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>📞 Your Phone:</label>
+                        <input type="tel" id="modalPhone" class="input" value="${currentUser.phone}" readonly>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>🔢 Transaction ID:</label>
+                        <input type="text" id="modalTransactionId" class="input" placeholder="From Airtel confirmation SMS" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>💵 Amount Paid (UGX):</label>
+                        <input type="number" id="modalAmount" class="input" value="${amount}" readonly>
+                    </div>
+                    
+                    <button type="button" class="btn btn-success" onclick="submitPayment('${level}', ${amount})">
+                        ✅ I HAVE PAID - VERIFY MY PAYMENT
+                    </button>
+                </form>
                 
-                <button class="btn btn-success" onclick="submitPayment('${level}', ${amount})">I Have Paid</button>
-                <button class="btn btn-warning" onclick="openTelegram()" style="margin-top: 0.5rem;">📞 Contact Support</button>
+                <div class="text-center mt-2">
+                    <button class="btn btn-warning" onclick="openSupportTelegram()">📞 Need Help? Contact Support</button>
+                </div>
             `;
             
             modal.style.display = 'block';
@@ -1063,17 +1349,26 @@
             document.getElementById('depositModal').style.display = 'none';
         }
 
-        function submitPayment(level, amount) {
+        async function submitPayment(level, amount) {
             if (!currentUser) return;
             
-            // Create pending payment
+            const transactionId = document.getElementById('modalTransactionId').value;
+            
+            if (!transactionId) {
+                showSuccess('Please enter your Transaction ID!', 'error');
+                return;
+            }
+            
+            // Create pending payment with unique ID for Telegram approval
+            const paymentId = 'PAY_' + Date.now();
             const payment = {
-                id: Date.now().toString(),
+                id: paymentId,
                 userId: currentUser.id,
                 userName: currentUser.name,
                 userPhone: currentUser.phone,
                 level: level,
                 amount: amount,
+                transactionId: transactionId,
                 status: 'pending',
                 date: new Date().toISOString(),
                 approved: false
@@ -1082,8 +1377,42 @@
             pendingPayments.push(payment);
             localStorage.setItem('pendingPayments', JSON.stringify(pendingPayments));
             
-            showSuccess(`Payment submitted! 🎉 We'll verify and activate your ${level} level within 24 hours.`);
-            hideDepositModal();
+            // Send Telegram notification with approve/decline buttons
+            const telegramMessage = `💰 <b>NEW PAYMENT REQUEST</b>\n\n👤 User: ${currentUser.name}\n📞 Phone: ${currentUser.phone}\n💼 Level: ${level}\n💵 Amount: ${amount.toLocaleString()} UGX\n🔢 Transaction: ${transactionId}\n🆔 Payment ID: ${paymentId}\n\n⏰ Time: ${new Date().toLocaleString()}\n\nClick to approve or decline:`;
+            
+            const telegramUrl = `https://api.telegram.org/bot${PAYMENT_BOT_TOKEN}/sendMessage`;
+            const keyboard = {
+                inline_keyboard: [[
+                    { text: "✅ APPROVE", callback_data: `approve_${paymentId}` },
+                    { text: "❌ DECLINE", callback_data: `decline_${paymentId}` }
+                ]]
+            };
+            
+            try {
+                const response = await fetch(telegramUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: ADMIN_CHAT_ID,
+                        text: telegramMessage,
+                        parse_mode: 'HTML',
+                        reply_markup: keyboard
+                    })
+                });
+                
+                if (response.ok) {
+                    showSuccess(`Payment submitted! 🎉 We'll verify and activate your ${level} level within 24 hours.`);
+                    hideDepositModal();
+                } else {
+                    showSuccess('Payment submitted! If Telegram notification fails, please contact support.', 'warning');
+                    hideDepositModal();
+                }
+            } catch (error) {
+                showSuccess('Payment submitted! If Telegram notification fails, please contact support.', 'warning');
+                hideDepositModal();
+            }
         }
 
         // Withdrawal System with Tax
@@ -1150,12 +1479,12 @@
             document.getElementById('withdrawPhone').value = '';
         }
 
-        // Support System
-        function openTelegram() {
-            window.open('https://t.me/Beam_earn', '_blank');
+        // UPDATED: Support System with New Bot
+        function openSupportTelegram() {
+            window.open('https://t.me/MyBusinessSupportBot', '_blank');
         }
 
-        function sendSupportMessage() {
+        async function sendSupportMessage() {
             const name = document.getElementById('supportName').value;
             const phone = document.getElementById('supportPhone').value;
             const message = document.getElementById('supportMessage').value;
@@ -1165,15 +1494,19 @@
                 return;
             }
             
-            const fullMessage = `Support Request from ${name} (${phone}): ${message}`;
-            window.open(`https://t.me/Beam_earn?text=${encodeURIComponent(fullMessage)}`, '_blank');
+            const fullMessage = `🆘 <b>SUPPORT REQUEST</b>\n\n👤 Name: ${name}\n📞 Phone: ${phone}\n💬 Message: ${message}\n\n⏰ Time: ${new Date().toLocaleString()}`;
             
-            // Clear form
-            document.getElementById('supportName').value = '';
-            document.getElementById('supportPhone').value = '';
-            document.getElementById('supportMessage').value = '';
+            const success = await sendTelegramNotification(fullMessage, true);
             
-            showSuccess('Message prepared! Opening Telegram...');
+            if (success) {
+                showSuccess('Support message sent! We will respond within 2 hours. ✨');
+                // Clear form
+                document.getElementById('supportName').value = '';
+                document.getElementById('supportPhone').value = '';
+                document.getElementById('supportMessage').value = '';
+            } else {
+                showSuccess('Failed to send message. Please try contacting @MyBusinessSupportBot directly.', 'error');
+            }
         }
 
         // Referral System
@@ -1300,6 +1633,26 @@
             for (let modal of modals) {
                 if (event.target === modal) {
                     modal.style.display = 'none';
+                }
+            }
+        }
+
+        // NEW: Function to handle Telegram callback queries (for admin approval)
+        // This would typically be handled on a server, but for demo we'll simulate
+        function simulateTelegramApproval(paymentId, approved) {
+            const payment = pendingPayments.find(p => p.id === paymentId);
+            if (payment) {
+                payment.status = approved ? 'approved' : 'declined';
+                payment.approved = approved;
+                localStorage.setItem('pendingPayments', JSON.stringify(pendingPayments));
+                
+                if (approved && currentUser && currentUser.id === payment.userId) {
+                    currentUser.level = payment.level.toLowerCase();
+                    users = users.map(u => u.id === currentUser.id ? currentUser : u);
+                    localStorage.setItem('users', JSON.stringify(users));
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    updateUserStats();
+                    showSuccess(`🎉 Your ${payment.level} level has been activated!`);
                 }
             }
         }
