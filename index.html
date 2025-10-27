@@ -691,6 +691,104 @@
         .mt-1 { margin-top: 1rem; }
         .mt-2 { margin-top: 2rem; }
 
+        /* NEW AUTO-SYNC STYLES */
+        .sync-status {
+            position: fixed;
+            top: 70px;
+            right: 10px;
+            background: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            z-index: 1001;
+            animation: pulse 2s infinite;
+            display: none;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .cloud-badge {
+            background: linear-gradient(45deg, #2196F3, #21CBF3);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .payment-steps-compact {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #7E57C2;
+        }
+
+        .payment-step-compact {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .step-number-compact {
+            background: #7E57C2;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 12px;
+            flex-shrink: 0;
+            font-size: 0.8rem;
+        }
+
+        .step-content-compact {
+            flex: 1;
+            font-size: 0.9rem;
+            line-height: 1.3;
+        }
+
+        .step-highlight-compact {
+            background: #FFE082;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #5D4037;
+        }
+
+        .recovery-status {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .recovery-success {
+            background: #C8E6C9;
+            color: #2E7D32;
+            border: 1px solid #A5D6A7;
+        }
+
+        .recovery-error {
+            background: #FFCDD2;
+            color: #C62828;
+            border: 1px solid #EF9A9A;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .stats-grid {
@@ -757,6 +855,23 @@
             .payment-method-tabs {
                 flex-direction: column;
             }
+
+            /* ULTRA-COMPACT PAYMENT STEPS */
+            .payment-step-compact {
+                margin-bottom: 8px;
+                padding: 8px;
+            }
+            
+            .step-number-compact {
+                width: 22px;
+                height: 22px;
+                margin-right: 10px;
+                font-size: 0.75rem;
+            }
+            
+            .step-content-compact {
+                font-size: 0.85rem;
+            }
         }
         
         @media (max-width: 480px) {
@@ -782,6 +897,9 @@
             </div>
         </div>
     </header>
+
+    <!-- Sync Status Indicator -->
+    <div id="syncStatus" class="sync-status">🔄 Syncing...</div>
 
     <!-- Main Content -->
     <main class="main">
@@ -1044,6 +1162,64 @@
                         </div>
                     </div>
 
+                    <!-- Cloud Users Management -->
+                    <h3 class="admin-section-title">☁️ Cloud Users Management</h3>
+                    
+                    <div class="admin-stats-grid">
+                        <div class="admin-stat-card">
+                            <div class="stat-label">Cloud Users</div>
+                            <div class="stat-amount" id="cloudUsersCount">0</div>
+                        </div>
+                        <div class="admin-stat-card">
+                            <div class="stat-label">Last Sync</div>
+                            <div class="stat-amount" id="lastSyncTime">Never</div>
+                        </div>
+                    </div>
+                    
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Phone</th>
+                                    <th>Level</th>
+                                    <th>Balance</th>
+                                    <th>Referrals</th>
+                                    <th>Last Active</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cloudUsersTable">
+                                <!-- Cloud users will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="admin-actions" style="margin-top: 1rem;">
+                        <button class="admin-btn approve" id="syncAllUsersBtn">🔄 Sync All Users</button>
+                        <button class="admin-btn edit" id="fixReferralsBtn">🔧 Fix Referral System</button>
+                    </div>
+
+                    <!-- Emergency Data Recovery -->
+                    <h3 class="admin-section-title">🚨 Emergency Data Recovery</h3>
+                    
+                    <div class="card" style="background: #16213e; color: white;">
+                        <h4>Quick Recovery Actions</h4>
+                        
+                        <div class="admin-actions" style="margin: 1rem 0;">
+                            <button class="admin-btn approve" id="recoverAllBtn">🔄 Recover All Users</button>
+                            <button class="admin-btn edit" id="fixAllReferralsBtn">👥 Fix All Referrals</button>
+                            <button class="admin-btn decline" id="resetSystemBtn">⚠️ Reset System Data</button>
+                        </div>
+                        
+                        <div class="input-group">
+                            <input type="text" id="specificUserId" class="input" placeholder="Specific User ID to Recover">
+                            <button class="admin-btn edit" id="recoverSpecificBtn">Recover Specific User</button>
+                        </div>
+                        
+                        <div id="recoveryStatus" style="margin-top: 1rem; padding: 1rem; background: #1e3a5f; border-radius: 8px;"></div>
+                    </div>
+
                     <!-- User Management -->
                     <h3 class="admin-section-title">👥 User Management</h3>
                     <div class="admin-table-container">
@@ -1259,6 +1435,184 @@
             }
         }
 
+        // AUTO-SYNC SYSTEM
+        function initializeAutoSync() {
+            // Sync every 30 seconds if user is logged in
+            setInterval(syncUserData, 30000);
+            
+            // Initial sync
+            setTimeout(syncUserData, 2000);
+            
+            console.log("Auto-sync system initialized");
+        }
+
+        function syncUserData() {
+            if (!currentUser || currentUser.isAdmin) return;
+            
+            try {
+                // Show sync status
+                const syncStatus = document.getElementById('syncStatus');
+                syncStatus.style.display = 'block';
+                
+                // Get current user data
+                const userData = {
+                    id: currentUser.id,
+                    name: currentUser.name,
+                    phone: currentUser.phone,
+                    level: currentUser.level,
+                    balance: currentUser.balance,
+                    referralCode: currentUser.referralCode,
+                    referralCount: currentUser.referralCount,
+                    referralEarnings: currentUser.referralEarnings,
+                    totalEarned: currentUser.totalEarned,
+                    internStartDate: currentUser.internStartDate,
+                    internDaysLeft: currentUser.internDaysLeft,
+                    tasksCompleted: currentUser.tasksCompleted,
+                    joinedDate: currentUser.joinedDate,
+                    lastActive: new Date().toISOString(),
+                    lastBonusClaim: currentUser.lastBonusClaim,
+                    lastTaskDate: currentUser.lastTaskDate,
+                    dailyQuestionsCompleted: currentUser.dailyQuestionsCompleted,
+                    dailyQuestionsLimit: currentUser.dailyQuestionsLimit,
+                    isActive: currentUser.isActive,
+                    syncTimestamp: Date.now()
+                };
+                
+                // Save to cloud storage (simulated with localStorage)
+                const cloudUsers = JSON.parse(localStorage.getItem('cloudUsers')) || [];
+                const existingIndex = cloudUsers.findIndex(u => u.id === currentUser.id);
+                
+                if (existingIndex >= 0) {
+                    cloudUsers[existingIndex] = userData;
+                } else {
+                    cloudUsers.push(userData);
+                }
+                
+                localStorage.setItem('cloudUsers', JSON.stringify(cloudUsers));
+                console.log(`User ${currentUser.name} synced to cloud at ${new Date().toLocaleTimeString()}`);
+                
+                // Hide sync status after 2 seconds
+                setTimeout(() => {
+                    syncStatus.style.display = 'none';
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Sync error:', error);
+            }
+        }
+
+        // EMERGENCY DATA RECOVERY
+        function recoverUserData(userId) {
+            try {
+                // Get cloud data
+                const cloudUsers = JSON.parse(localStorage.getItem('cloudUsers')) || [];
+                const cloudUser = cloudUsers.find(u => u.id === userId);
+                
+                if (!cloudUser) {
+                    alert('User not found in cloud data');
+                    return false;
+                }
+                
+                // Get local user
+                const localUserIndex = users.findIndex(u => u.id === userId);
+                
+                if (localUserIndex >= 0) {
+                    // Merge cloud data with local user
+                    users[localUserIndex] = {
+                        ...users[localUserIndex],
+                        ...cloudUser,
+                        password: users[localUserIndex].password // Preserve password
+                    };
+                } else {
+                    // Add user from cloud (with default password)
+                    users.push({
+                        ...cloudUser,
+                        password: 'default123'
+                    });
+                }
+                
+                saveData();
+                alert(`User ${cloudUser.name} data recovered successfully!`);
+                return true;
+                
+            } catch (error) {
+                console.error('Data recovery error:', error);
+                alert('Error recovering user data');
+                return false;
+            }
+        }
+
+        // REFERRAL SYSTEM ENHANCEMENT
+        function fixReferralSystem() {
+            try {
+                let fixedCount = 0;
+                
+                users.forEach(user => {
+                    // Recalculate referral count
+                    const actualReferrals = users.filter(u => u.referredBy === user.id);
+                    if (user.referralCount !== actualReferrals.length) {
+                        user.referralCount = actualReferrals.length;
+                        fixedCount++;
+                    }
+                    
+                    // Fix referral earnings if needed
+                    const referralTransactions = transactions.filter(
+                        t => t.userId === user.id && t.type === 'referral'
+                    );
+                    const calculatedEarnings = referralTransactions.reduce((sum, t) => sum + t.amount, 0);
+                    
+                    if (user.referralEarnings !== calculatedEarnings) {
+                        user.referralEarnings = calculatedEarnings;
+                        fixedCount++;
+                    }
+                });
+                
+                saveData();
+                alert(`Referral system fixed! ${fixedCount} issues resolved.`);
+                return fixedCount;
+                
+            } catch (error) {
+                console.error('Referral fix error:', error);
+                alert('Error fixing referral system');
+                return 0;
+            }
+        }
+
+        // CLOUD USERS MANAGEMENT
+        function loadCloudUsers() {
+            const cloudUsers = JSON.parse(localStorage.getItem('cloudUsers')) || [];
+            return cloudUsers;
+        }
+
+        function importCloudUser(cloudUserId) {
+            const cloudUsers = JSON.parse(localStorage.getItem('cloudUsers')) || [];
+            const cloudUser = cloudUsers.find(u => u.id === cloudUserId);
+            
+            if (!cloudUser) {
+                alert('User not found in cloud');
+                return false;
+            }
+            
+            // Check if user already exists locally
+            const existingUser = users.find(u => u.id === cloudUserId);
+            
+            if (existingUser) {
+                // Update existing user
+                Object.assign(existingUser, cloudUser);
+                alert(`User ${cloudUser.name} updated from cloud`);
+            } else {
+                // Add new user with default password
+                users.push({
+                    ...cloudUser,
+                    password: 'Welcome123!'
+                });
+                alert(`User ${cloudUser.name} imported from cloud`);
+            }
+            
+            saveData();
+            return true;
+        }
+
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
             console.log("App initialized. Total users in system:", users.length);
@@ -1266,6 +1620,9 @@
             checkAuthStatus();
             updateCountdownTimer();
             setInterval(updateCountdownTimer, 1000);
+            
+            // Initialize auto-sync system
+            initializeAutoSync();
         });
 
         function setupEventListeners() {
@@ -1654,43 +2011,31 @@
                     </div>
                 </div>
 
-                <!-- UPDATED PAYMENT INSTRUCTIONS WITH COMPACT STEPS -->
+                <!-- ULTRA-COMPACT PAYMENT INSTRUCTIONS -->
                 <div id="airtelInstructions" class="payment-instructions active">
                     <h4>📱 How to Pay via Airtel Money:</h4>
                     
-                    <div class="payment-step">
-                        <div class="step-number">1</div>
-                        <div class="step-text">Dial <span class="step-highlight">*185#</span></div>
-                    </div>
-                    
-                    <div class="payment-step">
-                        <div class="step-number">2</div>
-                        <div class="step-text">Choose option <span class="step-highlight">4 – Payments</span></div>
-                    </div>
-                    
-                    <div class="payment-step">
-                        <div class="step-number">3</div>
-                        <div class="step-text">Choose option <span class="step-highlight">1 – Goods and Services</span></div>
-                    </div>
-                    
-                    <div class="payment-step">
-                        <div class="step-number">4</div>
-                        <div class="step-text">Enter the Merchant Code: <span class="step-highlight">6911104</span></div>
-                    </div>
-                    
-                    <div class="payment-step">
-                        <div class="step-number">5</div>
-                        <div class="step-text">Enter the Amount: <span class="step-highlight">${amount.toLocaleString()} UGX</span></div>
-                    </div>
-                    
-                    <div class="payment-step">
-                        <div class="step-number">6</div>
-                        <div class="step-text">Enter Reference <span class="step-highlight">(if asked)</span></div>
-                    </div>
-                    
-                    <div class="payment-step">
-                        <div class="step-number">7</div>
-                        <div class="step-text">Enter your <span class="step-highlight">PIN to confirm</span></div>
+                    <div class="payment-steps-compact">
+                        <div class="payment-step-compact">
+                            <div class="step-number-compact">1</div>
+                            <div class="step-content-compact">Dial <span class="step-highlight-compact">*185#</span></div>
+                        </div>
+                        <div class="payment-step-compact">
+                            <div class="step-number-compact">2</div>
+                            <div class="step-content-compact">Choose <span class="step-highlight-compact">Payments → Goods & Services</span></div>
+                        </div>
+                        <div class="payment-step-compact">
+                            <div class="step-number-compact">3</div>
+                            <div class="step-content-compact">Enter Code: <span class="step-highlight-compact">6911104</span></div>
+                        </div>
+                        <div class="payment-step-compact">
+                            <div class="step-number-compact">4</div>
+                            <div class="step-content-compact">Amount: <span class="step-highlight-compact">${amount.toLocaleString()} UGX</span></div>
+                        </div>
+                        <div class="payment-step-compact">
+                            <div class="step-number-compact">5</div>
+                            <div class="step-content-compact">Enter PIN to confirm</div>
+                        </div>
                     </div>
                     
                     <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 8px; margin-top: 10px; text-align: center; font-weight: bold; font-size: 0.9rem;">
@@ -1701,39 +2046,27 @@
                 <div id="mtnInstructions" class="payment-instructions">
                     <h4>💛 How to Pay via MTN Mobile Money:</h4>
                     
-                    <div class="payment-step">
-                        <div class="step-number">1</div>
-                        <div class="step-text">Dial <span class="step-highlight">*165#</span></div>
-                    </div>
-                    
-                    <div class="payment-step">
-                        <div class="step-number">2</div>
-                        <div class="step-text">Choose option <span class="step-highlight">3 – Payments</span></div>
-                    </div>
-                    
-                    <div class="payment-step">
-                        <div class="step-number">3</div>
-                        <div class="step-text">Choose option <span class="step-highlight">1 – Goods and Services</span></div>
-                    </div>
-                    
-                    <div class="payment-step">
-                        <div class="step-number">4</div>
-                        <div class="step-text">Enter the Merchant Code: <span class="step-highlight">6911104</span></div>
-                    </div>
-                    
-                    <div class="payment-step">
-                        <div class="step-number">5</div>
-                        <div class="step-text">Enter the Amount: <span class="step-highlight">${amount.toLocaleString()} UGX</span></div>
-                    </div>
-                    
-                    <div class="payment-step">
-                        <div class="step-number">6</div>
-                        <div class="step-text">Enter Reference <span class="step-highlight">(reason or your name)</span></div>
-                    </div>
-                    
-                    <div class="payment-step">
-                        <div class="step-number">7</div>
-                        <div class="step-text">Enter your <span class="step-highlight">PIN to confirm</span></div>
+                    <div class="payment-steps-compact">
+                        <div class="payment-step-compact">
+                            <div class="step-number-compact">1</div>
+                            <div class="step-content-compact">Dial <span class="step-highlight-compact">*165#</span></div>
+                        </div>
+                        <div class="payment-step-compact">
+                            <div class="step-number-compact">2</div>
+                            <div class="step-content-compact">Choose <span class="step-highlight-compact">Payments → Goods & Services</span></div>
+                        </div>
+                        <div class="payment-step-compact">
+                            <div class="step-number-compact">3</div>
+                            <div class="step-content-compact">Enter Code: <span class="step-highlight-compact">6911104</span></div>
+                        </div>
+                        <div class="payment-step-compact">
+                            <div class="step-number-compact">4</div>
+                            <div class="step-content-compact">Amount: <span class="step-highlight-compact">${amount.toLocaleString()} UGX</span></div>
+                        </div>
+                        <div class="payment-step-compact">
+                            <div class="step-number-compact">5</div>
+                            <div class="step-content-compact">Enter PIN to confirm</div>
+                        </div>
                     </div>
                     
                     <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 8px; margin-top: 10px; text-align: center; font-weight: bold; font-size: 0.9rem;">
@@ -2248,6 +2581,108 @@
             document.getElementById('adminSubtractBalanceBtn').addEventListener('click', adminSubtractBalance);
             document.getElementById('adminChangeLevelBtn').addEventListener('click', adminChangeLevel);
             document.getElementById('adminResetInternBtn').addEventListener('click', adminResetIntern);
+            
+            // Load cloud users data
+            loadCloudUsersTable();
+            
+            // Add event listeners for cloud management
+            document.getElementById('syncAllUsersBtn').addEventListener('click', syncAllUsersToCloud);
+            document.getElementById('fixReferralsBtn').addEventListener('click', fixReferralSystem);
+            document.getElementById('recoverAllBtn').addEventListener('click', recoverAllUsers);
+            document.getElementById('fixAllReferralsBtn').addEventListener('click', fixReferralSystem);
+            document.getElementById('resetSystemBtn').addEventListener('click', resetSystemData);
+            document.getElementById('recoverSpecificBtn').addEventListener('click', recoverSpecificUser);
+        }
+
+        // CLOUD USERS MANAGEMENT
+        function loadCloudUsersTable() {
+            const cloudUsers = loadCloudUsers();
+            const table = document.getElementById('cloudUsersTable');
+            
+            document.getElementById('cloudUsersCount').textContent = cloudUsers.length;
+            
+            if (cloudUsers.length === 0) {
+                table.innerHTML = '<tr><td colspan="7" class="text-center">No cloud users found</td></tr>';
+                return;
+            }
+            
+            // Find latest sync time
+            const latestSync = cloudUsers.reduce((latest, user) => {
+                return user.syncTimestamp > latest ? user.syncTimestamp : latest;
+            }, 0);
+            
+            if (latestSync > 0) {
+                document.getElementById('lastSyncTime').textContent = new Date(latestSync).toLocaleTimeString();
+            }
+            
+            table.innerHTML = cloudUsers.map(user => `
+                <tr>
+                    <td>${user.name}</td>
+                    <td>${user.phone}</td>
+                    <td>${user.level.toUpperCase()}</td>
+                    <td>${user.balance.toLocaleString()} UGX</td>
+                    <td>${user.referralCount}</td>
+                    <td>${new Date(user.lastActive).toLocaleDateString()}</td>
+                    <td>
+                        <div class="admin-actions">
+                            <button class="admin-btn approve" onclick="importCloudUser('${user.id}')">Import</button>
+                            <button class="admin-btn edit" onclick="recoverUserData('${user.id}')">Recover</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function syncAllUsersToCloud() {
+            users.forEach(user => {
+                if (!user.isAdmin) {
+                    // Temporarily set as current user to use sync function
+                    const originalUser = currentUser;
+                    currentUser = user;
+                    syncUserData();
+                    currentUser = originalUser;
+                }
+            });
+            
+            alert('All users synced to cloud!');
+            loadCloudUsersTable();
+        }
+
+        function recoverAllUsers() {
+            const cloudUsers = loadCloudUsers();
+            let recovered = 0;
+            
+            cloudUsers.forEach(cloudUser => {
+                if (recoverUserData(cloudUser.id)) {
+                    recovered++;
+                }
+            });
+            
+            document.getElementById('recoveryStatus').innerHTML = 
+                `<div class="recovery-status recovery-success">✅ Successfully recovered ${recovered} users</div>`;
+            
+            loadAdminPanel();
+        }
+
+        function recoverSpecificUser() {
+            const userId = document.getElementById('specificUserId').value;
+            if (!userId) {
+                alert('Please enter a user ID');
+                return;
+            }
+            
+            if (recoverUserData(userId)) {
+                document.getElementById('recoveryStatus').innerHTML = 
+                    `<div class="recovery-status recovery-success">✅ User recovered successfully</div>`;
+                loadAdminPanel();
+            }
+        }
+
+        function resetSystemData() {
+            if (confirm('⚠️ ARE YOU SURE? This will reset ALL system data including users, transactions, and payments!')) {
+                localStorage.clear();
+                location.reload();
+            }
         }
 
         // Admin functions
