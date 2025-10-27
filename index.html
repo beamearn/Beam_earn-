@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beam Earn - Earn Money Daily</title>
     <style>
-        /* Your existing CSS styles here - keeping them the same */
+        /* Your existing CSS styles remain the same */
         :root {
             --primary: #7E57C2;
             --primary-dark: #5E35B1;
@@ -1157,15 +1157,111 @@
     </div>
 
     <script>
-        // Data Management
-        let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
-        let users = JSON.parse(localStorage.getItem('users')) || [];
-        let questions = JSON.parse(localStorage.getItem('questions')) || generateQuestions();
-        let payments = JSON.parse(localStorage.getItem('payments')) || [];
-        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-        
+        // Data Management - FIXED VERSION
+        // Initialize data with proper error handling
+        function initializeData() {
+            try {
+                // Check if localStorage is available
+                if (typeof(Storage) === "undefined") {
+                    console.error("LocalStorage is not supported by this browser");
+                    return {
+                        currentUser: null,
+                        users: [],
+                        questions: generateQuestions(),
+                        payments: [],
+                        transactions: []
+                    };
+                }
+                
+                // Load data with fallbacks
+                const currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+                const users = JSON.parse(localStorage.getItem('users')) || [];
+                const questions = JSON.parse(localStorage.getItem('questions')) || generateQuestions();
+                const payments = JSON.parse(localStorage.getItem('payments')) || [];
+                const transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+                
+                // Validate data structure
+                if (!Array.isArray(users)) {
+                    console.error("Invalid users data, resetting to empty array");
+                    localStorage.setItem('users', JSON.stringify([]));
+                    return {
+                        currentUser: null,
+                        users: [],
+                        questions: questions,
+                        payments: payments,
+                        transactions: transactions
+                    };
+                }
+                
+                return {
+                    currentUser,
+                    users,
+                    questions,
+                    payments,
+                    transactions
+                };
+            } catch (error) {
+                console.error("Error initializing data:", error);
+                // Reset to default values
+                return {
+                    currentUser: null,
+                    users: [],
+                    questions: generateQuestions(),
+                    payments: [],
+                    transactions: []
+                };
+            }
+        }
+
+        // Initialize data
+        let { currentUser, users, questions, payments, transactions } = initializeData();
+
+        // Enhanced save function with error handling
+        function saveData() {
+            try {
+                if (typeof(Storage) !== "undefined") {
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    localStorage.setItem('users', JSON.stringify(users));
+                    localStorage.setItem('questions', JSON.stringify(questions));
+                    localStorage.setItem('payments', JSON.stringify(payments));
+                    localStorage.setItem('transactions', JSON.stringify(transactions));
+                    console.log("Data saved successfully. Total users:", users.length);
+                } else {
+                    console.error("LocalStorage not available");
+                }
+            } catch (error) {
+                console.error("Error saving data:", error);
+            }
+        }
+
+        // Enhanced load function for admin panel
+        function loadAdminData() {
+            try {
+                const storedUsers = JSON.parse(localStorage.getItem('users')) || [];
+                const storedPayments = JSON.parse(localStorage.getItem('payments')) || [];
+                
+                // Update our local variables
+                users = storedUsers;
+                payments = storedPayments;
+                
+                console.log("Admin data loaded. Users:", storedUsers.length, "Payments:", storedPayments.length);
+                
+                return {
+                    users: storedUsers,
+                    payments: storedPayments
+                };
+            } catch (error) {
+                console.error("Error loading admin data:", error);
+                return {
+                    users: [],
+                    payments: []
+                };
+            }
+        }
+
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
+            console.log("App initialized. Total users in system:", users.length);
             setupEventListeners();
             checkAuthStatus();
             updateCountdownTimer();
@@ -1394,10 +1490,12 @@
             };
 
             users.push(user);
-            localStorage.setItem('users', JSON.stringify(users));
+            saveData(); // Use the enhanced save function
             
             currentUser = user;
             localStorage.setItem('currentUser', JSON.stringify(user));
+            
+            console.log("New user registered:", user.name, "Total users now:", users.length);
             
             alert('Welcome to Beam Earn! 🎉 You have 2 days FREE intern access!');
             hideAuth();
@@ -1436,7 +1534,7 @@
             if (user) {
                 user.lastActive = new Date().toISOString();
                 users = users.map(u => u.id === user.id ? user : u);
-                localStorage.setItem('users', JSON.stringify(users));
+                saveData();
                 
                 currentUser = user;
                 localStorage.setItem('currentUser', JSON.stringify(user));
@@ -1520,7 +1618,7 @@
             if (currentUser.level === 'intern' && currentUser.referralCount >= 50) {
                 currentUser.level = 'S1';
                 users = users.map(u => u.id === currentUser.id ? currentUser : u);
-                localStorage.setItem('users', JSON.stringify(users));
+                saveData();
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 alert('🎉 Congratulations! You have been upgraded to S1 level for referring 50 people!');
                 updateUserStats();
@@ -1719,7 +1817,7 @@
             };
             
             payments.push(payment);
-            localStorage.setItem('payments', JSON.stringify(payments));
+            saveData();
             
             alert(`Payment submitted for ${level} level! We will verify your payment and upgrade your account within 24 hours.`);
             hideDepositModal();
@@ -1753,11 +1851,7 @@
                 date: new Date().toISOString()
             };
             transactions.push(transaction);
-            localStorage.setItem('transactions', JSON.stringify(transactions));
-            
-            users = users.map(u => u.id === currentUser.id ? currentUser : u);
-            localStorage.setItem('users', JSON.stringify(users));
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            saveData();
             
             alert('🎉 Daily bonus claimed! 25 UGX added to your balance!');
             updateUserStats();
@@ -1797,8 +1891,7 @@
                 currentUser.dailyQuestionsCompleted = 0;
                 currentUser.lastTaskDate = today;
                 users = users.map(u => u.id === currentUser.id ? currentUser : u);
-                localStorage.setItem('users', JSON.stringify(users));
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                saveData();
             }
             
             // Get user's daily question limit based on level
@@ -1923,9 +2016,7 @@
             
             // Update user data
             users = users.map(u => u.id === currentUser.id ? currentUser : u);
-            localStorage.setItem('users', JSON.stringify(users));
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            localStorage.setItem('transactions', JSON.stringify(transactions));
+            saveData();
             
             // Show success message
             setTimeout(() => {
@@ -1996,9 +2087,7 @@
             transactions.push(transaction);
             
             users = users.map(u => u.id === currentUser.id ? currentUser : u);
-            localStorage.setItem('users', JSON.stringify(users));
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            localStorage.setItem('transactions', JSON.stringify(transactions));
+            saveData();
             
             alert(`Withdrawal request of ${amount.toLocaleString()} UGX submitted! 💸\nTax: ${tax} UGX\nYou'll receive: ${netAmount.toLocaleString()} UGX\nProcessing time: 24 hours`);
             updateUserStats();
@@ -2082,62 +2171,77 @@
         function loadAdminPanel() {
             if (!currentUser || !currentUser.isAdmin) return;
             
-            // Update admin stats
-            document.getElementById('adminTotalUsers').textContent = users.length;
-            document.getElementById('adminActiveUsers').textContent = users.filter(u => u.isActive).length;
+            // Reload data directly from localStorage to ensure we have the latest
+            const adminData = loadAdminData();
+            const adminUsers = adminData.users;
+            const adminPayments = adminData.payments;
             
-            const totalRevenue = payments
+            console.log("Admin panel loaded. Users:", adminUsers.length);
+            
+            // Update admin stats
+            document.getElementById('adminTotalUsers').textContent = adminUsers.length;
+            document.getElementById('adminActiveUsers').textContent = adminUsers.filter(u => u.isActive).length;
+            
+            const totalRevenue = adminPayments
                 .filter(p => p.status === 'approved')
                 .reduce((sum, p) => sum + p.amount, 0);
             document.getElementById('adminTotalRevenue').textContent = totalRevenue.toLocaleString() + ' UGX';
             
-            const pendingPayments = payments.filter(p => p.status === 'pending').length;
+            const pendingPayments = adminPayments.filter(p => p.status === 'pending').length;
             document.getElementById('adminPendingPayments').textContent = pendingPayments;
             
             // Load users table
             const usersTable = document.getElementById('adminUsersTable');
-            usersTable.innerHTML = users.map(user => `
-                <tr>
-                    <td>${user.name}</td>
-                    <td>${user.phone}</td>
-                    <td>${user.level.toUpperCase()}</td>
-                    <td>${user.balance.toLocaleString()} UGX</td>
-                    <td>${user.referralCount}</td>
-                    <td>
-                        <div class="admin-actions">
-                            <button class="admin-btn edit" onclick="adminEditUser('${user.id}')">Edit</button>
-                            <button class="admin-btn ${user.isActive ? 'decline' : 'approve'}" 
-                                    onclick="adminToggleUser('${user.id}')">
-                                ${user.isActive ? 'Deactivate' : 'Activate'}
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
+            if (adminUsers.length === 0) {
+                usersTable.innerHTML = '<tr><td colspan="6" class="text-center">No users found</td></tr>';
+            } else {
+                usersTable.innerHTML = adminUsers.map(user => `
+                    <tr>
+                        <td>${user.name}</td>
+                        <td>${user.phone}</td>
+                        <td>${user.level.toUpperCase()}</td>
+                        <td>${user.balance.toLocaleString()} UGX</td>
+                        <td>${user.referralCount}</td>
+                        <td>
+                            <div class="admin-actions">
+                                <button class="admin-btn edit" onclick="adminEditUser('${user.id}')">Edit</button>
+                                <button class="admin-btn ${user.isActive ? 'decline' : 'approve'}" 
+                                        onclick="adminToggleUser('${user.id}')">
+                                    ${user.isActive ? 'Deactivate' : 'Activate'}
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            }
             
             // Load payments table
             const paymentsTable = document.getElementById('adminPaymentsTable');
-            const pendingPaymentsList = payments.filter(p => p.status === 'pending');
-            paymentsTable.innerHTML = pendingPaymentsList.map(payment => `
-                <tr>
-                    <td>${payment.userName}</td>
-                    <td>${payment.level}</td>
-                    <td>${payment.amount.toLocaleString()} UGX</td>
-                    <td>${new Date(payment.date).toLocaleDateString()}</td>
-                    <td>${payment.status}</td>
-                    <td>
-                        <div class="admin-actions">
-                            <button class="admin-btn approve" onclick="adminApprovePayment('${payment.id}')">Approve</button>
-                            <button class="admin-btn decline" onclick="adminDeclinePayment('${payment.id}')">Decline</button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
+            const pendingPaymentsList = adminPayments.filter(p => p.status === 'pending');
+            if (pendingPaymentsList.length === 0) {
+                paymentsTable.innerHTML = '<tr><td colspan="6" class="text-center">No pending payments</td></tr>';
+            } else {
+                paymentsTable.innerHTML = pendingPaymentsList.map(payment => `
+                    <tr>
+                        <td>${payment.userName}</td>
+                        <td>${payment.level}</td>
+                        <td>${payment.amount.toLocaleString()} UGX</td>
+                        <td>${new Date(payment.date).toLocaleDateString()}</td>
+                        <td>${payment.status}</td>
+                        <td>
+                            <div class="admin-actions">
+                                <button class="admin-btn approve" onclick="adminApprovePayment('${payment.id}')">Approve</button>
+                                <button class="admin-btn decline" onclick="adminDeclinePayment('${payment.id}')">Decline</button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            }
             
             // Load user select for manual actions
             const userSelect = document.getElementById('adminUserSelect');
             userSelect.innerHTML = '<option value="">Select User</option>' + 
-                users.map(user => `<option value="${user.id}">${user.name} (${user.phone})</option>`).join('');
+                adminUsers.map(user => `<option value="${user.id}">${user.name} (${user.phone})</option>`).join('');
             
             // Add event listeners for admin actions
             document.getElementById('adminAddBalanceBtn').addEventListener('click', adminAddBalance);
@@ -2171,9 +2275,7 @@
             };
             transactions.push(transaction);
             
-            localStorage.setItem('users', JSON.stringify(users));
-            localStorage.setItem('payments', JSON.stringify(payments));
-            localStorage.setItem('transactions', JSON.stringify(transactions));
+            saveData();
             
             alert(`Payment approved! ${user.name} upgraded to ${payment.level}`);
             loadAdminPanel();
@@ -2185,7 +2287,7 @@
             
             payment.status = 'declined';
             
-            localStorage.setItem('payments', JSON.stringify(payments));
+            saveData();
             
             alert(`Payment declined for ${payment.userName}`);
             loadAdminPanel();
@@ -2216,8 +2318,7 @@
             };
             transactions.push(transaction);
             
-            localStorage.setItem('users', JSON.stringify(users));
-            localStorage.setItem('transactions', JSON.stringify(transactions));
+            saveData();
             
             alert(`Added ${amount.toLocaleString()} UGX to ${user.name}'s balance`);
             document.getElementById('adminBalanceChange').value = '';
@@ -2254,8 +2355,7 @@
             };
             transactions.push(transaction);
             
-            localStorage.setItem('users', JSON.stringify(users));
-            localStorage.setItem('transactions', JSON.stringify(transactions));
+            saveData();
             
             alert(`Subtracted ${amount.toLocaleString()} UGX from ${user.name}'s balance`);
             document.getElementById('adminBalanceChange').value = '';
@@ -2287,8 +2387,7 @@
             };
             transactions.push(transaction);
             
-            localStorage.setItem('users', JSON.stringify(users));
-            localStorage.setItem('transactions', JSON.stringify(transactions));
+            saveData();
             
             alert(`Changed ${user.name}'s level to ${newLevel}`);
             loadAdminPanel();
@@ -2308,7 +2407,7 @@
             user.internStartDate = new Date().toISOString();
             user.internDaysLeft = 2;
             
-            localStorage.setItem('users', JSON.stringify(users));
+            saveData();
             
             alert(`Reset intern period for ${user.name}`);
             loadAdminPanel();
@@ -2324,7 +2423,7 @@
             const newPhone = prompt('Enter new phone:', user.phone);
             if (newPhone) user.phone = newPhone;
             
-            localStorage.setItem('users', JSON.stringify(users));
+            saveData();
             loadAdminPanel();
         }
 
@@ -2334,7 +2433,7 @@
             
             user.isActive = !user.isActive;
             
-            localStorage.setItem('users', JSON.stringify(users));
+            saveData();
             loadAdminPanel();
         }
 
