@@ -983,7 +983,6 @@
             window.addEventListener('online', () => {
                 isOnline = true;
                 console.log('App is online');
-                syncOfflineData();
             });
             window.addEventListener('offline', () => {
                 isOnline = false;
@@ -1263,37 +1262,17 @@
 
                 console.log('Attempting to save user data to Firestore...');
 
-                // Try to save user data to Firestore with timeout
-                const savePromise = db.collection('users').doc(user.uid).set(userData);
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Firestore timeout')), 10000)
-                );
+                // Save user data to Firestore
+                await db.collection('users').doc(user.uid).set(userData);
+                console.log('User data saved to Firestore successfully');
 
-                try {
-                    await Promise.race([savePromise, timeoutPromise]);
-                    console.log('User data saved to Firestore successfully');
-                    
-                    alert('Welcome to Beam Earn! 🎉 You have 2 days FREE intern access!');
-                    hideAuth();
-                    
-                } catch (firestoreError) {
-                    console.error('Firestore error:', firestoreError);
-                    
-                    // If Firestore fails, try to save to localStorage as backup
-                    try {
-                        localStorage.setItem(`user_${user.uid}`, JSON.stringify(userData));
-                        console.log('User data saved to localStorage as backup');
-                        
-                        alert('Welcome to Beam Earn! 🎉 Account created successfully! (Some features may be limited until connection improves)');
-                        hideAuth();
-                    } catch (localError) {
-                        console.error('Local storage error:', localError);
-                        
-                        // If everything fails, delete the auth user
-                        await user.delete();
-                        alert('Registration failed. Please check your internet connection and try again.');
-                    }
+                // If referral code was provided, update referrer's count
+                if (referralCode) {
+                    await updateReferrerCount(referralCode, user.uid, name);
                 }
+                
+                alert('Welcome to Beam Earn! 🎉 You have 2 days FREE intern access!');
+                hideAuth();
                 
             } catch (error) {
                 console.error('Registration error:', error);
@@ -1304,6 +1283,60 @@
                 } else {
                     alert('Error creating account: ' + error.message);
                 }
+            }
+        }
+
+        // NEW FUNCTION: Update referrer's count when someone uses their referral code
+        async function updateReferrerCount(referralCode, newUserId, newUserName) {
+            try {
+                console.log('Looking for referrer with code:', referralCode);
+                
+                // Find the user with this referral code
+                const referrerQuery = await db.collection('users').where('referralCode', '==', referralCode).get();
+                
+                if (!referrerQuery.empty) {
+                    const referrerDoc = referrerQuery.docs[0];
+                    const referrerData = referrerDoc.data();
+                    
+                    console.log('Found referrer:', referrerData.name);
+                    
+                    // Update referrer's count and earnings
+                    const newReferralCount = (referrerData.referralCount || 0) + 1;
+                    
+                    await db.collection('users').doc(referrerDoc.id).update({
+                        referralCount: newReferralCount,
+                        lastActive: new Date().toISOString()
+                    });
+                    
+                    console.log('Referrer count updated to:', newReferralCount);
+                    
+                    // Add referral bonus to referrer (5% of intern daily earnings = 50 UGX)
+                    const referralBonus = 50;
+                    const newBalance = (referrerData.balance || 0) + referralBonus;
+                    const newReferralEarnings = (referrerData.referralEarnings || 0) + referralBonus;
+                    
+                    await db.collection('users').doc(referrerDoc.id).update({
+                        balance: newBalance,
+                        referralEarnings: newReferralEarnings
+                    });
+                    
+                    // Add transaction record for referrer
+                    const transactionData = {
+                        userId: referrerDoc.id,
+                        type: 'referral',
+                        amount: referralBonus,
+                        description: `Referral bonus from ${newUserName}`,
+                        date: new Date().toISOString(),
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    await db.collection('transactions').add(transactionData);
+                    
+                    console.log('Referral bonus added to referrer');
+                } else {
+                    console.log('No referrer found with code:', referralCode);
+                }
+            } catch (error) {
+                console.error('Error updating referrer count:', error);
             }
         }
 
@@ -1333,15 +1366,10 @@
                 
                 console.log('Login successful for user:', user.uid);
 
-                // Update last active timestamp with error handling
-                try {
-                    await db.collection('users').doc(user.uid).update({
-                        lastActive: new Date().toISOString()
-                    });
-                } catch (firestoreError) {
-                    console.error('Firestore update error:', firestoreError);
-                    // Continue with login even if Firestore update fails
-                }
+                // Update last active timestamp
+                await db.collection('users').doc(user.uid).update({
+                    lastActive: new Date().toISOString()
+                });
 
                 alert(`Welcome back! 👋`);
                 hideAuth();
@@ -1380,129 +1408,18 @@
                         const userDoc = await db.collection('users').doc(user.uid).get();
                         if (userDoc.exists) {
                             userData = userDoc.data();
-                            console.log('User data loaded from Firestore');
+                            console.log('User data loaded from Firestore:', userData);
                             updateUIForLoggedInUser();
                         } else {
-                            console.log('No user data found in Firestore, checking localStorage...');
-                            
-                            // Check localStorage for backup data
-                            const localData = localStorage.getItem(`user_${user.uid}`);
-                            if (localData) {
-                                userData = JSON.parse(localData);
-                                console.log('User data loaded from localStorage');
-                                updateUIForLoggedInUser();
-                                
-                                // Try to save to Firestore again
-                                try {
-                                    await db.collection('users').doc(user.uid).set(userData);
-                                    localStorage.removeItem(`user_${user.uid}`);
-                                    console.log('User data migrated from localStorage to Firestore');
-                                } catch (migrateError) {
-                                    console.error('Failed to migrate user data to Firestore:', migrateError);
-                                }
-                            } else {
-                                console.log('No user data found anywhere, creating default profile...');
-                                
-                                // Extract phone from email if possible
-                                let phone = 'Unknown';
-                                const emailMatch = user.email.match(/p(\d+)@beam-earn\.local/);
-                                if (emailMatch) {
-                                    const phoneDigits = emailMatch[1];
-                                    if (phoneDigits.startsWith('256')) {
-                                        phone = '+256' + phoneDigits.substring(3);
-                                    }
-                                }
-                                
-                                // Create a basic user profile
-                                const basicUserData = {
-                                    id: user.uid,
-                                    name: 'User',
-                                    phone: phone,
-                                    email: user.email,
-                                    referralCode: generateReferralCode(),
-                                    level: 'intern',
-                                    balance: 0,
-                                    referralEarnings: 0,
-                                    referralCount: 0,
-                                    totalEarned: 0,
-                                    internStartDate: new Date().toISOString(),
-                                    internDaysLeft: 2,
-                                    tasksCompleted: 0,
-                                    joinedDate: new Date().toISOString(),
-                                    lastActive: new Date().toISOString(),
-                                    lastBonusClaim: '',
-                                    lastTaskDate: '',
-                                    dailyQuestionsCompleted: 0,
-                                    dailyQuestionsLimit: 2,
-                                    isActive: true
-                                };
-                                
-                                try {
-                                    await db.collection('users').doc(user.uid).set(basicUserData);
-                                    userData = basicUserData;
-                                    updateUIForLoggedInUser();
-                                } catch (createError) {
-                                    console.error('Error creating user profile in Firestore:', createError);
-                                    
-                                    // Save to localStorage as last resort
-                                    try {
-                                        localStorage.setItem(`user_${user.uid}`, JSON.stringify(basicUserData));
-                                        userData = basicUserData;
-                                        updateUIForLoggedInUser();
-                                    } catch (localError) {
-                                        console.error('Error saving to localStorage:', localError);
-                                        // Use minimal data
-                                        userData = {
-                                            id: user.uid,
-                                            name: 'User',
-                                            level: 'intern',
-                                            balance: 0,
-                                            referralEarnings: 0,
-                                            referralCount: 0,
-                                            referralCode: 'ERROR'
-                                        };
-                                        updateUIForLoggedInUser();
-                                    }
-                                }
-                            }
+                            console.log('No user data found in Firestore');
+                            alert('User profile not found. Please contact support.');
+                            await auth.signOut();
+                            return;
                         }
                     } catch (error) {
                         console.error('Error loading user data:', error);
-                        
-                        // Try localStorage as fallback
-                        try {
-                            const localData = localStorage.getItem(`user_${user.uid}`);
-                            if (localData) {
-                                userData = JSON.parse(localData);
-                                console.log('User data loaded from localStorage (fallback)');
-                                updateUIForLoggedInUser();
-                            } else {
-                                // Use minimal data
-                                userData = {
-                                    id: user.uid,
-                                    name: 'User',
-                                    level: 'intern',
-                                    balance: 0,
-                                    referralEarnings: 0,
-                                    referralCount: 0,
-                                    referralCode: 'ERROR'
-                                };
-                                updateUIForLoggedInUser();
-                            }
-                        } catch (localError) {
-                            console.error('Error with localStorage fallback:', localError);
-                            // Use minimal data
-                            userData = {
-                                id: user.uid,
-                                name: 'User',
-                                level: 'intern',
-                                balance: 0,
-                                referralEarnings: 0,
-                                referralCount: 0,
-                                referralCode: 'ERROR'
-                            };
-                            updateUIForLoggedInUser();
-                        }
+                        alert('Error loading your profile. Please check your connection and try again.');
+                        return;
                     }
 
                     registerPrompt.classList.add('hidden');
@@ -1546,13 +1463,36 @@
         function updateUIForLoggedInUser() {
             if (!userData) return;
             
-            document.getElementById('availableBalance').textContent = userData.balance.toLocaleString() + ' UGX';
-            document.getElementById('vipLevel').textContent = userData.level.toUpperCase();
-            document.getElementById('referralCount').textContent = userData.referralCount;
-            document.getElementById('referralEarnings').textContent = userData.referralEarnings.toLocaleString() + ' UGX';
-            document.getElementById('walletBalance').textContent = userData.balance.toLocaleString() + ' UGX';
-            document.getElementById('walletReferral').textContent = userData.referralEarnings.toLocaleString() + ' UGX';
-            document.getElementById('userReferralCode').textContent = userData.referralCode;
+            console.log('Updating UI with user data:', userData);
+            
+            // Ensure all values are numbers, not strings
+            const balance = typeof userData.balance === 'string' ? parseFloat(userData.balance) : userData.balance;
+            const referralEarnings = typeof userData.referralEarnings === 'string' ? parseFloat(userData.referralEarnings) : userData.referralEarnings;
+            const referralCount = typeof userData.referralCount === 'string' ? parseInt(userData.referralCount) : userData.referralCount;
+            
+            document.getElementById('availableBalance').textContent = (balance || 0).toLocaleString() + ' UGX';
+            document.getElementById('vipLevel').textContent = (userData.level || 'intern').toUpperCase();
+            document.getElementById('referralCount').textContent = (referralCount || 0);
+            document.getElementById('referralEarnings').textContent = (referralEarnings || 0).toLocaleString() + ' UGX';
+            document.getElementById('walletBalance').textContent = (balance || 0).toLocaleString() + ' UGX';
+            document.getElementById('walletReferral').textContent = (referralEarnings || 0).toLocaleString() + ' UGX';
+            document.getElementById('userReferralCode').textContent = userData.referralCode || 'ERROR';
+            
+            // Update bonus section
+            const today = new Date().toDateString();
+            const lastClaimDate = userData.lastBonusClaim || '';
+            const bonusBtn = document.getElementById('claimBonusBtn');
+            const bonusStatus = document.getElementById('bonusStatus');
+            
+            if (lastClaimDate === today) {
+                bonusBtn.disabled = true;
+                bonusBtn.innerHTML = '✅ Bonus Claimed Today';
+                bonusStatus.innerHTML = 'Come back tomorrow for your next bonus!';
+            } else {
+                bonusBtn.disabled = false;
+                bonusBtn.innerHTML = '🎯 Claim Your 25 UGX!';
+                bonusStatus.innerHTML = '';
+            }
             
             // Auto-upgrade if user has 50+ referrals and is intern
             if (userData.level === 'intern' && userData.referralCount >= 50) {
@@ -1565,11 +1505,11 @@
             
             try {
                 await db.collection('users').doc(currentUser.uid).update({
-                    level: newLevel
+                    level: newLevel.toLowerCase()
                 });
                 
                 // Update local userData
-                userData.level = newLevel;
+                userData.level = newLevel.toLowerCase();
                 
                 alert(`🎉 Congratulations! You have been upgraded to ${newLevel} level!`);
                 updateUIForLoggedInUser();
@@ -1797,8 +1737,11 @@
                 return;
             }
             
-            const newBalance = userData.balance + 25;
-            const newTotalEarned = userData.totalEarned + 25;
+            const currentBalance = typeof userData.balance === 'string' ? parseFloat(userData.balance) : userData.balance;
+            const currentTotalEarned = typeof userData.totalEarned === 'string' ? parseFloat(userData.totalEarned) : userData.totalEarned;
+            
+            const newBalance = currentBalance + 25;
+            const newTotalEarned = currentTotalEarned + 25;
             
             try {
                 await db.collection('users').doc(currentUser.uid).update({
@@ -1827,33 +1770,7 @@
                 updateUIForLoggedInUser();
             } catch (error) {
                 console.error('Error claiming bonus:', error);
-                
-                // Try offline fallback
-                try {
-                    // Save to localStorage for offline processing
-                    const offlineBonus = {
-                        userId: currentUser.uid,
-                        type: 'bonus',
-                        amount: 25,
-                        date: new Date().toISOString(),
-                        timestamp: Date.now()
-                    };
-                    
-                    const offlineBonuses = JSON.parse(localStorage.getItem('offlineBonuses') || '[]');
-                    offlineBonuses.push(offlineBonus);
-                    localStorage.setItem('offlineBonuses', JSON.stringify(offlineBonuses));
-                    
-                    // Update local data
-                    userData.balance = newBalance;
-                    userData.totalEarned = newTotalEarned;
-                    userData.lastBonusClaim = today;
-                    
-                    alert('🎉 Daily bonus claimed offline! 25 UGX added to your balance! (Will sync when online)');
-                    updateUIForLoggedInUser();
-                } catch (offlineError) {
-                    console.error('Offline bonus error:', offlineError);
-                    alert('Error claiming bonus. Please check your connection and try again.');
-                }
+                alert('Error claiming bonus. Please try again.');
             }
         }
 
@@ -1984,8 +1901,11 @@
             const reward = getEarningsPerQuestion(userData.level);
             
             // Update user balance - ALL ANSWERS ARE CORRECT
-            const newBalance = userData.balance + reward;
-            const newTotalEarned = userData.totalEarned + reward;
+            const currentBalance = typeof userData.balance === 'string' ? parseFloat(userData.balance) : userData.balance;
+            const currentTotalEarned = typeof userData.totalEarned === 'string' ? parseFloat(userData.totalEarned) : userData.totalEarned;
+            
+            const newBalance = currentBalance + reward;
+            const newTotalEarned = currentTotalEarned + reward;
             const newDailyQuestionsCompleted = userData.dailyQuestionsCompleted + 1;
             const newTasksCompleted = userData.tasksCompleted + 1;
             
@@ -2024,35 +1944,7 @@
                 
             } catch (error) {
                 console.error('Error updating user data:', error);
-                
-                // Try offline fallback
-                try {
-                    // Save to localStorage for offline processing
-                    const offlineTask = {
-                        userId: currentUser.uid,
-                        type: 'task',
-                        amount: reward,
-                        date: new Date().toISOString(),
-                        timestamp: Date.now()
-                    };
-                    
-                    const offlineTasks = JSON.parse(localStorage.getItem('offlineTasks') || '[]');
-                    offlineTasks.push(offlineTask);
-                    localStorage.setItem('offlineTasks', JSON.stringify(offlineTasks));
-                    
-                    // Update local data
-                    userData.balance = newBalance;
-                    userData.totalEarned = newTotalEarned;
-                    userData.dailyQuestionsCompleted = newDailyQuestionsCompleted;
-                    userData.tasksCompleted = newTasksCompleted;
-                    
-                    alert(`✅ Answer submitted offline! You earned ${reward} UGX! (Will sync when online)`);
-                    loadDailyTasks(); // Reload tasks
-                    updateUIForLoggedInUser(); // Update balance display
-                } catch (offlineError) {
-                    console.error('Offline task error:', offlineError);
-                    alert('Error submitting answer. Please try again.');
-                }
+                alert('Error submitting answer. Please try again.');
             }
         }
 
@@ -2063,52 +1955,6 @@
                 case 'S2': return 602; // 4816 UGX / 8 questions
                 case 'S3': return 809; // 9708 UGX / 12 questions
                 default: return 500;
-            }
-        }
-
-        async function syncOfflineData() {
-            if (!currentUser) return;
-            
-            // Sync offline bonuses
-            try {
-                const offlineBonuses = JSON.parse(localStorage.getItem('offlineBonuses') || '[]');
-                for (const bonus of offlineBonuses) {
-                    if (bonus.userId === currentUser.uid) {
-                        await db.collection('transactions').add({
-                            userId: bonus.userId,
-                            type: 'bonus',
-                            amount: bonus.amount,
-                            description: 'Daily login bonus (offline sync)',
-                            date: bonus.date,
-                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                    }
-                }
-                localStorage.removeItem('offlineBonuses');
-                console.log('Offline bonuses synced');
-            } catch (error) {
-                console.error('Error syncing offline bonuses:', error);
-            }
-            
-            // Sync offline tasks
-            try {
-                const offlineTasks = JSON.parse(localStorage.getItem('offlineTasks') || '[]');
-                for (const task of offlineTasks) {
-                    if (task.userId === currentUser.uid) {
-                        await db.collection('transactions').add({
-                            userId: task.userId,
-                            type: 'task',
-                            amount: task.amount,
-                            description: 'Completed question (offline sync)',
-                            date: task.date,
-                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                    }
-                }
-                localStorage.removeItem('offlineTasks');
-                console.log('Offline tasks synced');
-            } catch (error) {
-                console.error('Error syncing offline tasks:', error);
             }
         }
 
@@ -2127,7 +1973,9 @@
                 return;
             }
             
-            if (amount > userData.balance) {
+            const currentBalance = typeof userData.balance === 'string' ? parseFloat(userData.balance) : userData.balance;
+            
+            if (amount > currentBalance) {
                 alert('Insufficient balance!');
                 return;
             }
@@ -2147,7 +1995,7 @@
             
             const tax = Math.floor(amount * (1000 / 5000));
             const netAmount = amount - tax;
-            const newBalance = userData.balance - amount;
+            const newBalance = currentBalance - amount;
             
             try {
                 // Update user balance in Firestore
