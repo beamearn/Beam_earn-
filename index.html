@@ -1266,7 +1266,7 @@
             }
         }
 
-        // FIXED REFERRAL FUNCTION
+        // FIXED REFERRAL FUNCTION - Properly tracks referrals with Firestore increments
         async function handleReferralRegistration(referralCode, newUserId) {
             try {
                 console.log('Looking for referrer with code:', referralCode);
@@ -1281,25 +1281,47 @@
                     
                     console.log('Found referrer:', referrerData.name, 'with ID:', referrerId);
                     
-                    // Get current referral count
+                    // Update the new user to track who referred them
+                    await db.collection('users').doc(newUserId).update({
+                        referredBy: referrerId
+                    });
+                    
+                    // Get current referral count and update using increment
                     const currentCount = referrerData.referralCount || 0;
-                    const newCount = currentCount + 1;
                     
-                    console.log(`Updating referral count from ${currentCount} to ${newCount}`);
+                    console.log(`Updating referral count from ${currentCount} to ${currentCount + 1}`);
                     
-                    // Update referrer's count
+                    // Update referrer's count using increment to avoid race conditions
                     await db.collection('users').doc(referrerId).update({
-                        referralCount: newCount
+                        referralCount: firebase.firestore.FieldValue.increment(1)
                     });
                     
                     console.log('Referral count updated successfully!');
                     
-                    // Auto-upgrade if needed
-                    if (referrerData.level === 'intern' && newCount >= 50) {
+                    // Auto-upgrade if needed (check if they'll reach 50 after this referral)
+                    if (referrerData.level === 'intern' && (currentCount + 1) >= 50) {
                         await db.collection('users').doc(referrerId).update({
                             level: 'S1'
                         });
                         console.log('Referrer auto-upgraded to S1!');
+                        
+                        // Add bonus for reaching 50 referrals
+                        const bonusAmount = 5000;
+                        await db.collection('users').doc(referrerId).update({
+                            balance: firebase.firestore.FieldValue.increment(bonusAmount),
+                            totalEarned: firebase.firestore.FieldValue.increment(bonusAmount)
+                        });
+                        
+                        // Record transaction
+                        const transactionData = {
+                            userId: referrerId,
+                            type: 'referral_bonus',
+                            amount: bonusAmount,
+                            description: '50 referrals bonus - Auto upgrade to S1',
+                            date: new Date().toISOString(),
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        };
+                        await db.collection('transactions').add(transactionData);
                     }
                     
                 } else {
@@ -1355,7 +1377,39 @@
             }
         }
 
-        // FIXED AUTH STATUS CHECK
+        // DATA MIGRATION - Fix existing users with missing data
+        async function migrateUserData(userId) {
+            try {
+                const userDoc = await db.collection('users').doc(userId).get();
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    const updates = {};
+                    
+                    // Ensure all required fields exist
+                    if (userData.balance === undefined) updates.balance = 0;
+                    if (userData.referralEarnings === undefined) updates.referralEarnings = 0;
+                    if (userData.referralCount === undefined) updates.referralCount = 0;
+                    if (userData.totalEarned === undefined) updates.totalEarned = 0;
+                    if (userData.tasksCompleted === undefined) updates.tasksCompleted = 0;
+                    if (userData.dailyQuestionsCompleted === undefined) updates.dailyQuestionsCompleted = 0;
+                    if (userData.dailyQuestionsLimit === undefined) updates.dailyQuestionsLimit = 2;
+                    if (userData.lastBonusClaim === undefined) updates.lastBonusClaim = '';
+                    if (userData.lastTaskDate === undefined) updates.lastTaskDate = '';
+                    if (userData.internDaysLeft === undefined) updates.internDaysLeft = 2;
+                    if (userData.isActive === undefined) updates.isActive = true;
+                    
+                    // Only update if there are changes needed
+                    if (Object.keys(updates).length > 0) {
+                        await db.collection('users').doc(userId).update(updates);
+                        console.log('User data migrated:', updates);
+                    }
+                }
+            } catch (error) {
+                console.error('Error migrating user data:', error);
+            }
+        }
+
+        // FIXED AUTH STATUS CHECK - Properly loads user data
         function checkAuthStatus() {
             auth.onAuthStateChanged(async (user) => {
                 const registerPrompt = document.getElementById('registerPrompt');
@@ -1374,30 +1428,37 @@
                         userListener();
                     }
                     
-                    // Set up real-time listener for user data
-                    userListener = db.collection('users').doc(user.uid).onSnapshot((doc) => {
-                        if (doc.exists) {
-                            userData = doc.data();
+                    // Load user data immediately
+                    try {
+                        const userDoc = await db.collection('users').doc(user.uid).get();
+                        if (userDoc.exists) {
+                            userData = userDoc.data();
                             console.log('User data loaded:', userData);
+                            
+                            // Migrate data if needed
+                            await migrateUserData(user.uid);
+                            
                             updateUIForLoggedInUser();
+                            
+                            // Set up real-time listener for updates
+                            userListener = db.collection('users').doc(user.uid).onSnapshot((doc) => {
+                                if (doc.exists) {
+                                    userData = doc.data();
+                                    updateUIForLoggedInUser();
+                                }
+                            });
                         } else {
                             console.log('No user data found, creating basic profile...');
-                            createBasicUserProfile(user);
+                            await createBasicUserProfile(user);
                         }
-                    }, (error) => {
+                    } catch (error) {
                         console.error('Error loading user data:', error);
-                    });
+                    }
 
                     registerPrompt.classList.add('hidden');
                     userStats.classList.remove('hidden');
                     referralSection.classList.remove('hidden');
                     dailyBonusSection.classList.remove('hidden');
-                    
-                    navAuth.innerHTML = `
-                        <span style="margin-right: 1rem; color: var(--primary); font-weight: 600;">Hi, Loading...</span>
-                        <button class="btn btn-warning" id="logoutBtn" style="padding: 8px 15px; width: auto;">Logout</button>
-                    `;
-                    document.getElementById('logoutBtn').addEventListener('click', logout);
                     
                 } else {
                     currentUser = null;
@@ -1719,7 +1780,7 @@
             }
         }
 
-        // FIXED BONUS CLAIM
+        // FIXED BONUS CLAIM - Uses Firestore increments for reliable data persistence
         async function claimDailyBonus() {
             if (!currentUser || !userData) {
                 alert('Please login first!');
@@ -1734,13 +1795,10 @@
                 return;
             }
             
-            const newBalance = (userData.balance || 0) + 25;
-            const newTotalEarned = (userData.totalEarned || 0) + 25;
-            
             try {
                 await db.collection('users').doc(currentUser.uid).update({
-                    balance: newBalance,
-                    totalEarned: newTotalEarned,
+                    balance: firebase.firestore.FieldValue.increment(25),
+                    totalEarned: firebase.firestore.FieldValue.increment(25),
                     lastBonusClaim: today
                 });
                 
@@ -1753,6 +1811,26 @@
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 };
                 await db.collection('transactions').add(transactionData);
+                
+                // Handle referral bonus for daily claim (1 UGX to referrer)
+                if (userData.referredBy) {
+                    const referralBonus = 1;
+                    await db.collection('users').doc(userData.referredBy).update({
+                        balance: firebase.firestore.FieldValue.increment(referralBonus),
+                        referralEarnings: firebase.firestore.FieldValue.increment(referralBonus),
+                        totalEarned: firebase.firestore.FieldValue.increment(referralBonus)
+                    });
+                    
+                    const referralTransaction = {
+                        userId: userData.referredBy,
+                        type: 'referral',
+                        amount: referralBonus,
+                        description: `Referral daily bonus from ${userData.name}`,
+                        date: new Date().toISOString(),
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    await db.collection('transactions').add(referralTransaction);
+                }
                 
                 alert('🎉 Daily bonus claimed! 25 UGX added to your balance!');
                 
@@ -1861,7 +1939,7 @@
             return shuffled.slice(0, count);
         }
 
-        // FIXED ANSWER CHECKING
+        // FIXED ANSWER CHECKING - Properly updates balances with Firestore increments
         async function checkAnswer(questionId, selectedAnswer, button) {
             if (!currentUser || !userData) return;
             
@@ -1879,17 +1957,13 @@
             
             const reward = getEarningsPerQuestion(userData.level);
             
-            const newBalance = (userData.balance || 0) + reward;
-            const newTotalEarned = (userData.totalEarned || 0) + reward;
-            const newDailyQuestionsCompleted = (userData.dailyQuestionsCompleted || 0) + 1;
-            const newTasksCompleted = (userData.tasksCompleted || 0) + 1;
-            
             try {
+                // Use Firestore increment to avoid race conditions and ensure data persistence
                 await db.collection('users').doc(currentUser.uid).update({
-                    balance: newBalance,
-                    totalEarned: newTotalEarned,
-                    dailyQuestionsCompleted: newDailyQuestionsCompleted,
-                    tasksCompleted: newTasksCompleted
+                    balance: firebase.firestore.FieldValue.increment(reward),
+                    totalEarned: firebase.firestore.FieldValue.increment(reward),
+                    dailyQuestionsCompleted: firebase.firestore.FieldValue.increment(1),
+                    tasksCompleted: firebase.firestore.FieldValue.increment(1)
                 });
                 
                 const transactionData = {
@@ -1901,6 +1975,27 @@
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 };
                 await db.collection('transactions').add(transactionData);
+                
+                // Handle referral earnings (5% to referrer)
+                if (userData.referredBy) {
+                    const referralBonus = Math.round(reward * 0.05);
+                    await db.collection('users').doc(userData.referredBy).update({
+                        balance: firebase.firestore.FieldValue.increment(referralBonus),
+                        referralEarnings: firebase.firestore.FieldValue.increment(referralBonus),
+                        totalEarned: firebase.firestore.FieldValue.increment(referralBonus)
+                    });
+                    
+                    // Record referral transaction
+                    const referralTransaction = {
+                        userId: userData.referredBy,
+                        type: 'referral',
+                        amount: referralBonus,
+                        description: `Referral earnings from ${userData.name}`,
+                        date: new Date().toISOString(),
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    await db.collection('transactions').add(referralTransaction);
+                }
                 
                 setTimeout(() => {
                     alert(`✅ Answer submitted! You earned ${reward} UGX!`);
@@ -1923,6 +2018,7 @@
             }
         }
 
+        // FIXED WITHDRAWAL - Uses Firestore increment for reliable balance updates
         async function processWithdrawal() {
             if (!currentUser || !userData) {
                 alert('Please login first!');
@@ -1957,11 +2053,11 @@
             
             const tax = Math.floor(amount * (1000 / 5000));
             const netAmount = amount - tax;
-            const newBalance = (userData.balance || 0) - amount;
             
             try {
+                // Use decrement for reliable balance updates
                 await db.collection('users').doc(currentUser.uid).update({
-                    balance: newBalance
+                    balance: firebase.firestore.FieldValue.increment(-amount)
                 });
                 
                 const withdrawalData = {
