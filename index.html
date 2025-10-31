@@ -11,7 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     
     <style>
-        /* ALL YOUR EXISTING CSS STYLES - UNCHANGED */
+        /* Your existing CSS styles remain the same */
         :root {
             --primary: #7E57C2;
             --primary-dark: #5E35B1;
@@ -281,6 +281,7 @@
             color: var(--dark);
         }
 
+        /* UPDATED PAYMENT STYLES - IMPROVED FOR MOBILE */
         .payment-method-tabs {
             display: flex;
             gap: 10px;
@@ -323,6 +324,7 @@
             border-top: 2px solid #eee;
         }
 
+        /* UPDATED MERCHANT CODE STYLES - MORE COMPACT FOR MOBILE */
         .merchant-code-display {
             background: linear-gradient(135deg, #fff3cd, #ffeaa7);
             border: 3px solid #ffc107;
@@ -503,6 +505,7 @@
             margin-bottom: 0.3rem;
         }
 
+        /* NEW TASK STYLES */
         .question-card {
             background: var(--white);
             border-radius: 15px;
@@ -582,6 +585,7 @@
         .mt-1 { margin-top: 1rem; }
         .mt-2 { margin-top: 2rem; }
 
+        /* Responsive */
         @media (max-width: 768px) {
             .stats-grid {
                 grid-template-columns: 1fr;
@@ -598,6 +602,7 @@
                 overflow-y: auto;
             }
             
+            /* MOBILE-OPTIMIZED MERCHANT CODE */
             .merchant-code-value {
                 font-size: 24px;
                 letter-spacing: 2px;
@@ -613,6 +618,7 @@
                 font-size: 1rem;
             }
             
+            /* COMPACT PAYMENT STEPS FOR MOBILE */
             .payment-step {
                 margin-bottom: 8px;
                 padding: 6px;
@@ -961,16 +967,9 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Enable offline persistence
-        db.enablePersistence()
-          .catch((err) => {
-              console.log('Firestore persistence failed: ', err);
-          });
-
         // Data Management
         let currentUser = null;
         let userData = null;
-        let userListener = null;
         
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
@@ -1153,33 +1152,15 @@
             document.getElementById('authModal').style.display = 'none';
         }
 
-        function normalizePhoneNumber(phone) {
-            let normalized = phone.replace(/\D/g, '');
-            
-            if (normalized.startsWith('0')) {
-                normalized = '+256' + normalized.substring(1);
-            } else if (normalized.startsWith('256') && normalized.length === 12) {
-                normalized = '+' + normalized;
-            } else if (!normalized.startsWith('+') && normalized.length === 9) {
-                normalized = '+256' + normalized;
-            }
-            
-            return normalized;
-        }
-
+        // Convert phone number to email format for Firebase Auth
         function phoneToEmail(phone) {
-            const normalizedPhone = normalizePhoneNumber(phone);
-            const local = normalizedPhone.replace(/\+/g, "p").replace(/\D/g, "");
+            phone = phone.trim().replace(/\s+/g, "");
+            if (phone.startsWith("0")) phone = "+256" + phone.slice(1);
+            if (!phone.startsWith("+")) phone = "+256" + phone;
+            const local = phone.replace(/\+/g, "p").replace(/\D/g, "");
             return local + "@beam-earn.local";
         }
 
-        function isValidPhoneNumber(phone) {
-            const normalized = normalizePhoneNumber(phone);
-            const ugandanRegex = /^\+256(7[0-9]|20|3[0-9]|4[0-9]|5[0-9]|6[0-9]|8[0-9]|9[0-9])[0-9]{6,7}$/;
-            return ugandanRegex.test(normalized);
-        }
-
-        // FIXED REGISTER FUNCTION
         async function register() {
             const name = document.getElementById('regName').value;
             const phone = document.getElementById('regPhone').value;
@@ -1196,30 +1177,30 @@
                 return;
             }
 
-            if (!isValidPhoneNumber(phone)) {
-                alert('Please enter a valid Ugandan phone number (e.g. 0707275930, 256707275930, or +256707275930)');
+            // Validate phone number
+            const phoneRegex = /^(0|\+256)\d{9}$/;
+            if (!phoneRegex.test(phone)) {
+                alert('Please enter a valid phone number (e.g. 0707275930 or +256707275930)');
                 return;
             }
 
             try {
+                // Convert phone to email format
                 const email = phoneToEmail(phone);
-                console.log('Creating user with email:', email);
                 
+                // Create Firebase Auth user
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 const user = userCredential.user;
-
-                console.log('Auth user created:', user.uid);
 
                 // Generate referral code
                 const userReferralCode = generateReferralCode();
                 
-                // Create user data
+                // Create user data for Firestore
                 const userData = {
                     id: user.uid,
                     name: name,
                     phone: phone,
-                    normalizedPhone: normalizePhoneNumber(phone),
-                    email: email,
+                    email: email, // Keep the email format for auth
                     referralCode: userReferralCode,
                     referredBy: referralCode || null,
                     level: 'intern',
@@ -1239,96 +1220,72 @@
                     isActive: true
                 };
 
-                console.log('Saving user data to Firestore...');
-                
-                // SAVE USER DATA TO FIRESTORE
-                await db.collection('users').doc(user.uid).set(userData);
-                console.log('User data saved successfully!');
-                
-                // Handle referral if provided
-                if (referralCode && referralCode.trim() !== '') {
-                    console.log('Processing referral code:', referralCode);
-                    await handleReferralRegistration(referralCode, user.uid);
+                // Save user data to Firestore with error handling
+                try {
+                    await db.collection('users').doc(user.uid).set(userData);
+                    
+                    // Handle referral if provided
+                    if (referralCode) {
+                        await handleReferral(referralCode, user.uid);
+                    }
+                    
+                    alert('Welcome to Beam Earn! 🎉 You have 2 days FREE intern access!');
+                    hideAuth();
+                } catch (firestoreError) {
+                    console.error('Firestore error:', firestoreError);
+                    
+                    // If Firestore fails, delete the auth user to avoid orphaned accounts
+                    await user.delete();
+                    
+                    if (firestoreError.code === 'permission-denied') {
+                        alert('Registration failed due to security rules. Please try again or contact support.');
+                    } else {
+                        alert('Registration completed but profile setup failed. Please login and try again.');
+                    }
                 }
-                
-                alert('Welcome to Beam Earn! 🎉 You have 2 days FREE intern access!');
-                hideAuth();
                 
             } catch (error) {
                 console.error('Registration error:', error);
                 if (error.code === 'auth/email-already-in-use') {
                     alert('This phone number is already registered. Please login or use a different phone number.');
-                } else if (error.code === 'auth/network-request-failed') {
-                    alert('Network error. Please check your internet connection and try again.');
                 } else {
                     alert('Error creating account: ' + error.message);
                 }
             }
         }
 
-        // FIXED REFERRAL FUNCTION - Properly tracks referrals with Firestore increments
-        async function handleReferralRegistration(referralCode, newUserId) {
+        async function handleReferral(referralCode, newUserId) {
             try {
-                console.log('Looking for referrer with code:', referralCode);
-                
                 // Find user with this referral code
-                const referrerQuery = await db.collection('users').where('referralCode', '==', referralCode.toUpperCase()).get();
+                const usersRef = db.collection('users');
+                const querySnapshot = await usersRef.where('referralCode', '==', referralCode).get();
                 
-                if (!referrerQuery.empty) {
-                    const referrerDoc = referrerQuery.docs[0];
-                    const referrerId = referrerDoc.id;
+                if (!querySnapshot.empty) {
+                    const referrerDoc = querySnapshot.docs[0];
                     const referrerData = referrerDoc.data();
+                    const referrerId = referrerDoc.id;
                     
-                    console.log('Found referrer:', referrerData.name, 'with ID:', referrerId);
-                    
-                    // Update the new user to track who referred them
-                    await db.collection('users').doc(newUserId).update({
-                        referredBy: referrerId
-                    });
-                    
-                    // Get current referral count and update using increment
-                    const currentCount = referrerData.referralCount || 0;
-                    
-                    console.log(`Updating referral count from ${currentCount} to ${currentCount + 1}`);
-                    
-                    // Update referrer's count using increment to avoid race conditions
+                    // Update referrer's data
                     await db.collection('users').doc(referrerId).update({
                         referralCount: firebase.firestore.FieldValue.increment(1)
                     });
                     
-                    console.log('Referral count updated successfully!');
+                    // Add referral record
+                    const referralData = {
+                        referrerId: referrerId,
+                        referredUserId: newUserId,
+                        referralCode: referralCode,
+                        date: new Date().toISOString(),
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    };
                     
-                    // Auto-upgrade if needed (check if they'll reach 50 after this referral)
-                    if (referrerData.level === 'intern' && (currentCount + 1) >= 50) {
-                        await db.collection('users').doc(referrerId).update({
-                            level: 'S1'
-                        });
-                        console.log('Referrer auto-upgraded to S1!');
-                        
-                        // Add bonus for reaching 50 referrals
-                        const bonusAmount = 5000;
-                        await db.collection('users').doc(referrerId).update({
-                            balance: firebase.firestore.FieldValue.increment(bonusAmount),
-                            totalEarned: firebase.firestore.FieldValue.increment(bonusAmount)
-                        });
-                        
-                        // Record transaction
-                        const transactionData = {
-                            userId: referrerId,
-                            type: 'referral_bonus',
-                            amount: bonusAmount,
-                            description: '50 referrals bonus - Auto upgrade to S1',
-                            date: new Date().toISOString(),
-                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                        };
-                        await db.collection('transactions').add(transactionData);
-                    }
+                    await db.collection('referrals').add(referralData);
                     
-                } else {
-                    console.log('No user found with referral code:', referralCode);
+                    console.log('Referral recorded successfully');
                 }
             } catch (error) {
-                console.error('Error in referral processing:', error);
+                console.error('Error handling referral:', error);
+                // Don't block registration if referral fails
             }
         }
 
@@ -1341,24 +1298,29 @@
                 return;
             }
 
-            if (!isValidPhoneNumber(phone)) {
-                alert('Please enter a valid Ugandan phone number (e.g. 0707275930, 256707275930, or +256707275930)');
+            // Validate phone number
+            const phoneRegex = /^(0|\+256)\d{9}$/;
+            if (!phoneRegex.test(phone)) {
+                alert('Please enter a valid phone number (e.g. 0707275930 or +256707275930)');
                 return;
             }
 
             try {
+                // Convert phone to email format
                 const email = phoneToEmail(phone);
-                console.log('Logging in with email:', email);
                 
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 const user = userCredential.user;
                 
-                console.log('Login successful for user:', user.uid);
-
-                // Update last active
-                await db.collection('users').doc(user.uid).update({
-                    lastActive: new Date().toISOString()
-                });
+                // Update last active timestamp with error handling
+                try {
+                    await db.collection('users').doc(user.uid).update({
+                        lastActive: new Date().toISOString()
+                    });
+                } catch (firestoreError) {
+                    console.error('Firestore update error:', firestoreError);
+                    // Continue with login even if Firestore update fails
+                }
 
                 alert(`Welcome back! 👋`);
                 hideAuth();
@@ -1369,47 +1331,12 @@
                     alert('No account found with this phone number. Please register first.');
                 } else if (error.code === 'auth/wrong-password') {
                     alert('Invalid password. Please try again.');
-                } else if (error.code === 'auth/network-request-failed') {
-                    alert('Network error. Please check your internet connection and try again.');
                 } else {
                     alert('Invalid phone number or password!');
                 }
             }
         }
 
-        // DATA MIGRATION - Fix existing users with missing data
-        async function migrateUserData(userId) {
-            try {
-                const userDoc = await db.collection('users').doc(userId).get();
-                if (userDoc.exists) {
-                    const userData = userDoc.data();
-                    const updates = {};
-                    
-                    // Ensure all required fields exist
-                    if (userData.balance === undefined) updates.balance = 0;
-                    if (userData.referralEarnings === undefined) updates.referralEarnings = 0;
-                    if (userData.referralCount === undefined) updates.referralCount = 0;
-                    if (userData.totalEarned === undefined) updates.totalEarned = 0;
-                    if (userData.tasksCompleted === undefined) updates.tasksCompleted = 0;
-                    if (userData.dailyQuestionsCompleted === undefined) updates.dailyQuestionsCompleted = 0;
-                    if (userData.dailyQuestionsLimit === undefined) updates.dailyQuestionsLimit = 2;
-                    if (userData.lastBonusClaim === undefined) updates.lastBonusClaim = '';
-                    if (userData.lastTaskDate === undefined) updates.lastTaskDate = '';
-                    if (userData.internDaysLeft === undefined) updates.internDaysLeft = 2;
-                    if (userData.isActive === undefined) updates.isActive = true;
-                    
-                    // Only update if there are changes needed
-                    if (Object.keys(updates).length > 0) {
-                        await db.collection('users').doc(userId).update(updates);
-                        console.log('User data migrated:', updates);
-                    }
-                }
-            } catch (error) {
-                console.error('Error migrating user data:', error);
-            }
-        }
-
-        // FIXED AUTH STATUS CHECK - Properly loads user data
         function checkAuthStatus() {
             auth.onAuthStateChanged(async (user) => {
                 const registerPrompt = document.getElementById('registerPrompt');
@@ -1420,39 +1347,73 @@
                 const navAuth = document.querySelector('.nav-auth');
 
                 if (user) {
+                    // User is signed in
                     currentUser = user;
-                    console.log('User authenticated:', user.uid);
                     
-                    // Remove previous listener if exists
-                    if (userListener) {
-                        userListener();
-                    }
-                    
-                    // Load user data immediately
+                    // Load user data from Firestore with error handling
                     try {
                         const userDoc = await db.collection('users').doc(user.uid).get();
                         if (userDoc.exists) {
                             userData = userDoc.data();
-                            console.log('User data loaded:', userData);
-                            
-                            // Migrate data if needed
-                            await migrateUserData(user.uid);
-                            
                             updateUIForLoggedInUser();
-                            
-                            // Set up real-time listener for updates
-                            userListener = db.collection('users').doc(user.uid).onSnapshot((doc) => {
-                                if (doc.exists) {
-                                    userData = doc.data();
-                                    updateUIForLoggedInUser();
-                                }
-                            });
                         } else {
-                            console.log('No user data found, creating basic profile...');
-                            await createBasicUserProfile(user);
+                            console.error('No user data found! Creating default profile...');
+                            // Create a basic user profile if it doesn't exist
+                            const basicUserData = {
+                                id: user.uid,
+                                name: 'User',
+                                phone: 'Unknown',
+                                email: user.email,
+                                referralCode: generateReferralCode(),
+                                level: 'intern',
+                                balance: 0,
+                                referralEarnings: 0,
+                                referralCount: 0,
+                                totalEarned: 0,
+                                internStartDate: new Date().toISOString(),
+                                internDaysLeft: 2,
+                                tasksCompleted: 0,
+                                joinedDate: new Date().toISOString(),
+                                lastActive: new Date().toISOString(),
+                                lastBonusClaim: '',
+                                lastTaskDate: '',
+                                dailyQuestionsCompleted: 0,
+                                dailyQuestionsLimit: 2,
+                                isActive: true
+                            };
+                            
+                            try {
+                                await db.collection('users').doc(user.uid).set(basicUserData);
+                                userData = basicUserData;
+                                updateUIForLoggedInUser();
+                            } catch (createError) {
+                                console.error('Error creating user profile:', createError);
+                                // Use minimal data if Firestore fails
+                                userData = {
+                                    id: user.uid,
+                                    name: 'User',
+                                    level: 'intern',
+                                    balance: 0,
+                                    referralEarnings: 0,
+                                    referralCount: 0,
+                                    referralCode: 'ERROR'
+                                };
+                                updateUIForLoggedInUser();
+                            }
                         }
                     } catch (error) {
                         console.error('Error loading user data:', error);
+                        // Use minimal data if Firestore fails
+                        userData = {
+                            id: user.uid,
+                            name: 'User',
+                            level: 'intern',
+                            balance: 0,
+                            referralEarnings: 0,
+                            referralCount: 0,
+                            referralCode: 'ERROR'
+                        };
+                        updateUIForLoggedInUser();
                     }
 
                     registerPrompt.classList.add('hidden');
@@ -1460,15 +1421,22 @@
                     referralSection.classList.remove('hidden');
                     dailyBonusSection.classList.remove('hidden');
                     
+                    if (userData && userData.level === 'intern') {
+                        internCountdown.classList.remove('hidden');
+                    } else {
+                        internCountdown.classList.add('hidden');
+                    }
+                    
+                    navAuth.innerHTML = `
+                        <span style="margin-right: 1rem; color: var(--primary); font-weight: 600;">Hi, ${userData?.name || 'User'}</span>
+                        <button class="btn btn-warning" id="logoutBtn" style="padding: 8px 15px; width: auto;">Logout</button>
+                    `;
+                    document.getElementById('logoutBtn').addEventListener('click', logout);
+                    
                 } else {
+                    // User is signed out
                     currentUser = null;
                     userData = null;
-                    
-                    // Remove listener when user logs out
-                    if (userListener) {
-                        userListener();
-                        userListener = null;
-                    }
                     
                     registerPrompt.classList.remove('hidden');
                     userStats.classList.add('hidden');
@@ -1486,77 +1454,18 @@
             });
         }
 
-        async function createBasicUserProfile(user) {
-            try {
-                let phone = 'Unknown';
-                const emailMatch = user.email.match(/p(\d+)@beam-earn\.local/);
-                if (emailMatch) {
-                    const phoneDigits = emailMatch[1];
-                    if (phoneDigits.startsWith('256')) {
-                        phone = '+256' + phoneDigits.substring(3);
-                    }
-                }
-                
-                const basicUserData = {
-                    id: user.uid,
-                    name: 'User',
-                    phone: phone,
-                    email: user.email,
-                    referralCode: generateReferralCode(),
-                    level: 'intern',
-                    balance: 0,
-                    referralEarnings: 0,
-                    referralCount: 0,
-                    totalEarned: 0,
-                    internStartDate: new Date().toISOString(),
-                    internDaysLeft: 2,
-                    tasksCompleted: 0,
-                    joinedDate: new Date().toISOString(),
-                    lastActive: new Date().toISOString(),
-                    lastBonusClaim: '',
-                    lastTaskDate: '',
-                    dailyQuestionsCompleted: 0,
-                    dailyQuestionsLimit: 2,
-                    isActive: true
-                };
-                
-                await db.collection('users').doc(user.uid).set(basicUserData);
-                userData = basicUserData;
-                updateUIForLoggedInUser();
-            } catch (error) {
-                console.error('Error creating user profile:', error);
-            }
-        }
-
         function updateUIForLoggedInUser() {
             if (!userData) return;
             
-            console.log('Updating UI with user data:', userData);
+            document.getElementById('availableBalance').textContent = userData.balance.toLocaleString() + ' UGX';
+            document.getElementById('vipLevel').textContent = userData.level.toUpperCase();
+            document.getElementById('referralCount').textContent = userData.referralCount;
+            document.getElementById('referralEarnings').textContent = userData.referralEarnings.toLocaleString() + ' UGX';
+            document.getElementById('walletBalance').textContent = userData.balance.toLocaleString() + ' UGX';
+            document.getElementById('walletReferral').textContent = userData.referralEarnings.toLocaleString() + ' UGX';
+            document.getElementById('userReferralCode').textContent = userData.referralCode;
             
-            document.getElementById('availableBalance').textContent = (userData.balance || 0).toLocaleString() + ' UGX';
-            document.getElementById('vipLevel').textContent = (userData.level || 'intern').toUpperCase();
-            document.getElementById('referralCount').textContent = userData.referralCount || 0;
-            document.getElementById('referralEarnings').textContent = (userData.referralEarnings || 0).toLocaleString() + ' UGX';
-            document.getElementById('walletBalance').textContent = (userData.balance || 0).toLocaleString() + ' UGX';
-            document.getElementById('walletReferral').textContent = (userData.referralEarnings || 0).toLocaleString() + ' UGX';
-            document.getElementById('userReferralCode').textContent = userData.referralCode || 'ERROR';
-            
-            const navAuth = document.querySelector('.nav-auth');
-            if (navAuth) {
-                navAuth.innerHTML = `
-                    <span style="margin-right: 1rem; color: var(--primary); font-weight: 600;">Hi, ${userData.name || 'User'}</span>
-                    <button class="btn btn-warning" id="logoutBtn" style="padding: 8px 15px; width: auto;">Logout</button>
-                `;
-                document.getElementById('logoutBtn').addEventListener('click', logout);
-            }
-            
-            const internCountdown = document.getElementById('internCountdown');
-            if (userData.level === 'intern') {
-                internCountdown.classList.remove('hidden');
-            } else {
-                internCountdown.classList.add('hidden');
-            }
-            
+            // Auto-upgrade if user has 50+ referrals and is intern
             if (userData.level === 'intern' && userData.referralCount >= 50) {
                 upgradeUserLevel('S1');
             }
@@ -1570,6 +1479,7 @@
                     level: newLevel
                 });
                 
+                // Update local userData
                 userData.level = newLevel;
                 
                 alert(`🎉 Congratulations! You have been upgraded to ${newLevel} level!`);
@@ -1592,6 +1502,7 @@
                 <h3 class="text-center" style="color: var(--primary);">Upgrade to ${level} 💫</h3>
                 <p class="text-center">Investment Amount: <strong>${amount.toLocaleString()} UGX</strong></p>
                 
+                <!-- UPDATED COMPACT MERCHANT CODE DISPLAY -->
                 <div class="merchant-code-display">
                     <div class="merchant-code-title">🏪 Merchant Code</div>
                     <div class="merchant-code-value">6911104</div>
@@ -1607,6 +1518,7 @@
                     </div>
                 </div>
 
+                <!-- UPDATED PAYMENT INSTRUCTIONS WITH COMPACT STEPS -->
                 <div id="airtelInstructions" class="payment-instructions active">
                     <h4>📱 How to Pay via Airtel Money:</h4>
                     
@@ -1714,6 +1626,7 @@
             
             modal.style.display = 'block';
             
+            // Add event listeners for dynamic content
             document.getElementById('airtelTab').addEventListener('click', function() {
                 switchPaymentMethod('airtel');
             });
@@ -1758,6 +1671,7 @@
             }
             
             try {
+                // Create payment record in Firestore
                 const paymentData = {
                     userId: currentUser.uid,
                     userName: userData.name,
@@ -1780,7 +1694,6 @@
             }
         }
 
-        // FIXED BONUS CLAIM - Uses Firestore increments for reliable data persistence
         async function claimDailyBonus() {
             if (!currentUser || !userData) {
                 alert('Please login first!');
@@ -1795,13 +1708,17 @@
                 return;
             }
             
+            const newBalance = userData.balance + 25;
+            const newTotalEarned = userData.totalEarned + 25;
+            
             try {
                 await db.collection('users').doc(currentUser.uid).update({
-                    balance: firebase.firestore.FieldValue.increment(25),
-                    totalEarned: firebase.firestore.FieldValue.increment(25),
+                    balance: newBalance,
+                    totalEarned: newTotalEarned,
                     lastBonusClaim: today
                 });
                 
+                // Add transaction record
                 const transactionData = {
                     userId: currentUser.uid,
                     type: 'bonus',
@@ -1812,28 +1729,13 @@
                 };
                 await db.collection('transactions').add(transactionData);
                 
-                // Handle referral bonus for daily claim (1 UGX to referrer)
-                if (userData.referredBy) {
-                    const referralBonus = 1;
-                    await db.collection('users').doc(userData.referredBy).update({
-                        balance: firebase.firestore.FieldValue.increment(referralBonus),
-                        referralEarnings: firebase.firestore.FieldValue.increment(referralBonus),
-                        totalEarned: firebase.firestore.FieldValue.increment(referralBonus)
-                    });
-                    
-                    const referralTransaction = {
-                        userId: userData.referredBy,
-                        type: 'referral',
-                        amount: referralBonus,
-                        description: `Referral daily bonus from ${userData.name}`,
-                        date: new Date().toISOString(),
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-                    await db.collection('transactions').add(referralTransaction);
-                }
+                // Update local userData
+                userData.balance = newBalance;
+                userData.totalEarned = newTotalEarned;
+                userData.lastBonusClaim = today;
                 
                 alert('🎉 Daily bonus claimed! 25 UGX added to your balance!');
-                
+                updateUIForLoggedInUser();
             } catch (error) {
                 console.error('Error claiming bonus:', error);
                 alert('Error claiming bonus. Please try again.');
@@ -1868,6 +1770,7 @@
             const tasksContainer = document.getElementById('tasksContainer');
             const dailyTaskStatus = document.getElementById('dailyTaskStatus');
             
+            // Check if it's a new day
             const today = new Date().toDateString();
             if (userData.lastTaskDate !== today) {
                 try {
@@ -1875,11 +1778,14 @@
                         dailyQuestionsCompleted: 0,
                         lastTaskDate: today
                     });
+                    userData.dailyQuestionsCompleted = 0;
+                    userData.lastTaskDate = today;
                 } catch (error) {
                     console.error('Error resetting daily tasks:', error);
                 }
             }
             
+            // Get user's daily question limit based on level
             let dailyLimit = 2;
             switch(userData.level) {
                 case 'S1': dailyLimit = 4; break;
@@ -1887,14 +1793,14 @@
                 case 'S3': dailyLimit = 12; break;
             }
             
-            const completedToday = userData.dailyQuestionsCompleted || 0;
-            
+            // Update status display
             dailyTaskStatus.innerHTML = `
-                <p>Questions Completed Today: ${completedToday}/${dailyLimit}</p>
+                <p>Questions Completed Today: ${userData.dailyQuestionsCompleted}/${dailyLimit}</p>
                 <p>Earnings Per Question: ${getEarningsPerQuestion(userData.level)} UGX</p>
             `;
             
-            if (completedToday >= dailyLimit) {
+            // Check if user has completed all daily questions
+            if (userData.dailyQuestionsCompleted >= dailyLimit) {
                 tasksContainer.innerHTML = `
                     <div class="card text-center">
                         <h3 style="color: var(--success);">🎉 All Questions Completed!</h3>
@@ -1905,9 +1811,11 @@
                 return;
             }
             
+            // Get random questions (using the same local questions for now)
             const questions = generateQuestions();
-            const randomQuestions = getRandomQuestions(questions, dailyLimit - completedToday);
+            const randomQuestions = getRandomQuestions(questions, dailyLimit - userData.dailyQuestionsCompleted);
             
+            // Display questions
             tasksContainer.innerHTML = '';
             randomQuestions.forEach((question, index) => {
                 const questionCard = document.createElement('div');
@@ -1925,6 +1833,7 @@
                 tasksContainer.appendChild(questionCard);
             });
             
+            // Add event listeners to option buttons
             document.querySelectorAll('.option-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const questionId = this.getAttribute('data-question-id');
@@ -1939,7 +1848,6 @@
             return shuffled.slice(0, count);
         }
 
-        // FIXED ANSWER CHECKING - Properly updates balances with Firestore increments
         async function checkAnswer(questionId, selectedAnswer, button) {
             if (!currentUser || !userData) return;
             
@@ -1949,23 +1857,33 @@
             
             const options = button.parentElement.querySelectorAll('.option-btn');
             
+            // Disable all buttons
             options.forEach(btn => {
                 btn.disabled = true;
             });
             
+            // Mark selected answer
             button.classList.add('selected');
             
+            // Calculate reward based on user level
             const reward = getEarningsPerQuestion(userData.level);
             
+            // Update user balance - ALL ANSWERS ARE CORRECT
+            const newBalance = userData.balance + reward;
+            const newTotalEarned = userData.totalEarned + reward;
+            const newDailyQuestionsCompleted = userData.dailyQuestionsCompleted + 1;
+            const newTasksCompleted = userData.tasksCompleted + 1;
+            
             try {
-                // Use Firestore increment to avoid race conditions and ensure data persistence
+                // Update user data in Firestore
                 await db.collection('users').doc(currentUser.uid).update({
-                    balance: firebase.firestore.FieldValue.increment(reward),
-                    totalEarned: firebase.firestore.FieldValue.increment(reward),
-                    dailyQuestionsCompleted: firebase.firestore.FieldValue.increment(1),
-                    tasksCompleted: firebase.firestore.FieldValue.increment(1)
+                    balance: newBalance,
+                    totalEarned: newTotalEarned,
+                    dailyQuestionsCompleted: newDailyQuestionsCompleted,
+                    tasksCompleted: newTasksCompleted
                 });
                 
+                // Add transaction record
                 const transactionData = {
                     userId: currentUser.uid,
                     type: 'task',
@@ -1976,30 +1894,17 @@
                 };
                 await db.collection('transactions').add(transactionData);
                 
-                // Handle referral earnings (5% to referrer)
-                if (userData.referredBy) {
-                    const referralBonus = Math.round(reward * 0.05);
-                    await db.collection('users').doc(userData.referredBy).update({
-                        balance: firebase.firestore.FieldValue.increment(referralBonus),
-                        referralEarnings: firebase.firestore.FieldValue.increment(referralBonus),
-                        totalEarned: firebase.firestore.FieldValue.increment(referralBonus)
-                    });
-                    
-                    // Record referral transaction
-                    const referralTransaction = {
-                        userId: userData.referredBy,
-                        type: 'referral',
-                        amount: referralBonus,
-                        description: `Referral earnings from ${userData.name}`,
-                        date: new Date().toISOString(),
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-                    await db.collection('transactions').add(referralTransaction);
-                }
+                // Update local userData
+                userData.balance = newBalance;
+                userData.totalEarned = newTotalEarned;
+                userData.dailyQuestionsCompleted = newDailyQuestionsCompleted;
+                userData.tasksCompleted = newTasksCompleted;
                 
+                // Show success message
                 setTimeout(() => {
                     alert(`✅ Answer submitted! You earned ${reward} UGX!`);
-                    loadDailyTasks();
+                    loadDailyTasks(); // Reload tasks
+                    updateUIForLoggedInUser(); // Update balance display
                 }, 500);
                 
             } catch (error) {
@@ -2010,15 +1915,14 @@
 
         function getEarningsPerQuestion(level) {
             switch(level) {
-                case 'intern': return 500;
-                case 'S1': return 347;
-                case 'S2': return 602;
-                case 'S3': return 809;
+                case 'intern': return 500; // 1000 UGX / 2 questions
+                case 'S1': return 347; // 1388 UGX / 4 questions
+                case 'S2': return 602; // 4816 UGX / 8 questions
+                case 'S3': return 809; // 9708 UGX / 12 questions
                 default: return 500;
             }
         }
 
-        // FIXED WITHDRAWAL - Uses Firestore increment for reliable balance updates
         async function processWithdrawal() {
             if (!currentUser || !userData) {
                 alert('Please login first!');
@@ -2034,7 +1938,7 @@
                 return;
             }
             
-            if (amount > (userData.balance || 0)) {
+            if (amount > userData.balance) {
                 alert('Insufficient balance!');
                 return;
             }
@@ -2044,6 +1948,7 @@
                 return;
             }
             
+            // Check withdrawal hours (9 AM - 10 PM)
             const now = new Date();
             const currentHour = now.getHours();
             if (currentHour < 9 || currentHour >= 22) {
@@ -2053,13 +1958,15 @@
             
             const tax = Math.floor(amount * (1000 / 5000));
             const netAmount = amount - tax;
+            const newBalance = userData.balance - amount;
             
             try {
-                // Use decrement for reliable balance updates
+                // Update user balance in Firestore
                 await db.collection('users').doc(currentUser.uid).update({
-                    balance: firebase.firestore.FieldValue.increment(-amount)
+                    balance: newBalance
                 });
                 
+                // Add withdrawal record
                 const withdrawalData = {
                     userId: currentUser.uid,
                     userName: userData.name,
@@ -2076,6 +1983,7 @@
                 };
                 await db.collection('withdrawals').add(withdrawalData);
                 
+                // Add transaction record
                 const transactionData = {
                     userId: currentUser.uid,
                     type: 'withdrawal',
@@ -2086,7 +1994,11 @@
                 };
                 await db.collection('transactions').add(transactionData);
                 
+                // Update local userData
+                userData.balance = newBalance;
+                
                 alert(`Withdrawal request of ${amount.toLocaleString()} UGX submitted! 💸\nTax: ${tax} UGX\nYou'll receive: ${netAmount.toLocaleString()} UGX\nProcessing time: 24 hours`);
+                updateUIForLoggedInUser();
                 loadTransactionHistory();
                 
                 document.getElementById('withdrawAmount').value = '';
@@ -2136,7 +2048,7 @@
         }
 
         function openSupportTelegram() {
-            window.open('https://t.me/Beam_earn', '_blank');
+            window.open('https://t.me/Beam_earn_bot', '_blank');
         }
 
         async function sendSupportMessage() {
@@ -2250,6 +2162,7 @@
                 }
             ];
             
+            // Generate more questions to reach 50
             for (let i = 6; i <= 50; i++) {
                 questionList.push({
                     id: i.toString(),
