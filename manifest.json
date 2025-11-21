@@ -1,0 +1,21 @@
+{
+  "name": "Beam Earn",
+  "short_name": "BeamEarn",
+  "start_url": "/Beam_earn-/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0a84ff",
+  "description": "Earn and track your rewards with Beam Earn app",
+  "icons": [
+    {
+      "src": "/Beam_earn-/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/Beam_earn-/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
