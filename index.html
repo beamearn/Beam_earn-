@@ -11,7 +11,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     
     <style>
-        /* Your existing CSS styles remain the same */
         :root {
             --primary: #7E57C2;
             --primary-dark: #5E35B1;
@@ -123,12 +122,6 @@
             color: var(--white);
         }
 
-        .btn-outline {
-            background: transparent;
-            border: 2px solid var(--primary);
-            color: var(--primary);
-        }
-
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -202,28 +195,6 @@
             background: var(--success);
         }
 
-        .task-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin: 1.5rem 0;
-        }
-
-        .task-card {
-            background: var(--white);
-            border-left: 5px solid var(--success);
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .task-reward {
-            color: var(--success);
-            font-weight: bold;
-            font-size: 1.3rem;
-            margin: 1rem 0;
-        }
-
         .input-group {
             margin-bottom: 1.5rem;
         }
@@ -281,7 +252,6 @@
             color: var(--dark);
         }
 
-        /* UPDATED PAYMENT STYLES - IMPROVED FOR MOBILE */
         .payment-method-tabs {
             display: flex;
             gap: 10px;
@@ -324,7 +294,6 @@
             border-top: 2px solid #eee;
         }
 
-        /* UPDATED MERCHANT CODE STYLES - MORE COMPACT FOR MOBILE */
         .merchant-code-display {
             background: linear-gradient(135deg, #fff3cd, #ffeaa7);
             border: 3px solid #ffc107;
@@ -395,17 +364,6 @@
             border-radius: 4px;
         }
 
-        .success-message {
-            display: none;
-            background: #d4edda;
-            color: #155724;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-            text-align: center;
-            border: 1px solid #c3e6cb;
-        }
-
         .support-section {
             background: linear-gradient(135deg, var(--primary), var(--dark));
             color: white;
@@ -433,10 +391,6 @@
             text-align: center;
             margin: 1.5rem 0;
             box-shadow: 0 5px 15px rgba(255, 107, 0, 0.3);
-        }
-
-        .bonus-claimed {
-            background: linear-gradient(135deg, var(--success), #00C853);
         }
 
         .bonus-amount {
@@ -505,7 +459,6 @@
             margin-bottom: 0.3rem;
         }
 
-        /* NEW TASK STYLES */
         .question-card {
             background: var(--white);
             border-radius: 15px;
@@ -585,6 +538,49 @@
         .mt-1 { margin-top: 1rem; }
         .mt-2 { margin-top: 2rem; }
 
+        /* RECENT WITHDRAWS SECTION - UPDATED */
+        .withdraws-container {
+            overflow: hidden;
+            padding: 1rem 0;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .withdraws-scroll {
+            display: flex;
+            gap: 12px;
+            animation: scrollWithdraws 30s linear infinite;
+            padding: 0 1rem;
+        }
+
+        @keyframes scrollWithdraws {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(calc(-200px * 25)); }
+        }
+
+        .withdraw-box {
+            background: white;
+            border-radius: 12px;
+            padding: 0.8rem 1rem;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            min-width: 180px;
+            flex-shrink: 0;
+            text-align: center;
+        }
+
+        .withdraw-phone {
+            color: #1A237E;
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .withdraw-amount {
+            color: #4CAF50;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .stats-grid {
@@ -602,7 +598,6 @@
                 overflow-y: auto;
             }
             
-            /* MOBILE-OPTIMIZED MERCHANT CODE */
             .merchant-code-value {
                 font-size: 24px;
                 letter-spacing: 2px;
@@ -618,7 +613,6 @@
                 font-size: 1rem;
             }
             
-            /* COMPACT PAYMENT STEPS FOR MOBILE */
             .payment-step {
                 margin-bottom: 8px;
                 padding: 6px;
@@ -642,6 +636,16 @@
             .payment-method-tabs {
                 flex-direction: column;
             }
+            
+            .withdraw-box {
+                min-width: 160px;
+                padding: 0.7rem 0.9rem;
+            }
+            
+            @keyframes scrollWithdraws {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(calc(-160px * 25)); }
+            }
         }
         
         @media (max-width: 480px) {
@@ -653,6 +657,19 @@
             .merchant-code-value {
                 font-size: 20px;
                 letter-spacing: 1px;
+            }
+            
+            .withdraw-box {
+                min-width: 150px;
+                padding: 0.6rem 0.8rem;
+            }
+            
+            .withdraw-phone {
+                font-size: 0.85rem;
+            }
+            
+            .withdraw-amount {
+                font-size: 0.9rem;
             }
         }
     </style>
@@ -670,6 +687,16 @@
 
     <!-- Main Content -->
     <main class="main">
+        <!-- Recent Withdraws Section - NOW AT THE TOP -->
+        <section class="card">
+            <h2 style="color: var(--primary); text-align: center; margin-bottom: 1rem;">Recent Withdraws</h2>
+            <div class="withdraws-container">
+                <div class="withdraws-scroll" id="withdrawsScroll">
+                    <!-- Withdraw boxes will be generated here -->
+                </div>
+            </div>
+        </section>
+
         <!-- Dashboard -->
         <section id="dashboard">
             <!-- Register Button on Dashboard -->
@@ -976,6 +1003,7 @@
             setupEventListeners();
             checkAuthStatus();
             updateCountdownTimer();
+            generateWithdraws();
             setInterval(updateCountdownTimer, 1000);
         });
 
@@ -1060,6 +1088,40 @@
                     event.target.style.display = 'none';
                 }
             });
+        }
+
+        function generateWithdraws() {
+            const withdrawsScroll = document.getElementById('withdrawsScroll');
+            const withdrawCount = 50;
+            
+            for (let i = 0; i < withdrawCount; i++) {
+                const phone = generateMaskedPhone();
+                const amount = generateRandomAmount();
+                
+                const withdrawBox = document.createElement('div');
+                withdrawBox.className = 'withdraw-box';
+                withdrawBox.innerHTML = `
+                    <div class="withdraw-phone">${phone}</div>
+                    <div class="withdraw-amount">withdrew ugx${amount.toLocaleString()}</div>
+                `;
+                
+                withdrawsScroll.appendChild(withdrawBox);
+            }
+            
+            // Duplicate content for seamless looping
+            const content = withdrawsScroll.innerHTML;
+            withdrawsScroll.innerHTML += content;
+        }
+
+        function generateMaskedPhone() {
+            const prefix = '07';
+            const middle = '*****';
+            const lastTwo = Math.floor(Math.random() * 90 + 10).toString();
+            return prefix + middle + lastTwo;
+        }
+
+        function generateRandomAmount() {
+            return Math.floor(Math.random() * (450000 - 50000 + 1)) + 50000;
         }
 
         function showSection(sectionId) {
@@ -1200,7 +1262,7 @@
                     id: user.uid,
                     name: name,
                     phone: phone,
-                    email: email, // Keep the email format for auth
+                    email: email,
                     referralCode: userReferralCode,
                     referredBy: referralCode || null,
                     level: 'intern',
@@ -1502,7 +1564,6 @@
                 <h3 class="text-center" style="color: var(--primary);">Upgrade to ${level} 💫</h3>
                 <p class="text-center">Investment Amount: <strong>${amount.toLocaleString()} UGX</strong></p>
                 
-                <!-- UPDATED COMPACT MERCHANT CODE DISPLAY -->
                 <div class="merchant-code-display">
                     <div class="merchant-code-title">🏪 Merchant Code</div>
                     <div class="merchant-code-value">6911104</div>
@@ -1518,7 +1579,6 @@
                     </div>
                 </div>
 
-                <!-- UPDATED PAYMENT INSTRUCTIONS WITH COMPACT STEPS -->
                 <div id="airtelInstructions" class="payment-instructions active">
                     <h4>📱 How to Pay via Airtel Money:</h4>
                     
@@ -1811,7 +1871,7 @@
                 return;
             }
             
-            // Get random questions (using the same local questions for now)
+            // Get random questions
             const questions = generateQuestions();
             const randomQuestions = getRandomQuestions(questions, dailyLimit - userData.dailyQuestionsCompleted);
             
@@ -1825,7 +1885,7 @@
                     <div class="options-container">
                         ${question.options.map((option, i) => `
                             <button class="option-btn" data-question-id="${question.id}" data-answer="${i}">
-                                ${option}
+                                ${String.fromCharCode(65 + i)}. ${option}
                             </button>
                         `).join('')}
                     </div>
@@ -2129,50 +2189,110 @@
         }
 
         function generateQuestions() {
-            const questionList = [
-                {
-                    id: '1',
-                    question: 'What is the capital of Uganda?',
-                    options: ['Kampala', 'Nairobi', 'Kigali', 'Dar es Salaam'],
-                    correctAnswer: 0
-                },
-                {
-                    id: '2',
-                    question: 'Which company developed the Android operating system?',
-                    options: ['Apple', 'Microsoft', 'Google', 'Samsung'],
-                    correctAnswer: 2
-                },
-                {
-                    id: '3',
-                    question: 'What is the largest planet in our solar system?',
-                    options: ['Earth', 'Mars', 'Jupiter', 'Saturn'],
-                    correctAnswer: 2
-                },
-                {
-                    id: '4',
-                    question: 'Which year did Uganda gain independence?',
-                    options: ['1960', '1962', '1964', '1966'],
-                    correctAnswer: 1
-                },
-                {
-                    id: '5',
-                    question: 'What is the main ingredient in guacamole?',
-                    options: ['Tomato', 'Avocado', 'Onion', 'Pepper'],
-                    correctAnswer: 1
-                }
+            const questions = [
+                { id: '1', question: '2 + 2 = ?', options: ['4', '5'] },
+                { id: '2', question: 'Is Uganda a landlocked country?', options: ['Yes', 'No'] },
+                { id: '3', question: 'How many countries are in Africa?', options: ['54', '48'] },
+                { id: '4', question: 'Which one is a fruit?', options: ['Apple', 'Carrot'] },
+                { id: '5', question: 'What is 10 ÷ 2?', options: ['5', '2'] },
+                { id: '6', question: 'Is water wet?', options: ['Yes', 'No'] },
+                { id: '7', question: 'Which is larger?', options: ['Elephant', 'Mouse'] },
+                { id: '8', question: 'How many days in a week?', options: ['7', '5'] },
+                { id: '9', question: 'What color is the sky?', options: ['Blue', 'Green'] },
+                { id: '10', question: 'Is the sun hot?', options: ['Yes', 'No'] },
+                { id: '11', question: '5 × 3 = ?', options: ['15', '8'] },
+                { id: '12', question: 'Which is a vegetable?', options: ['Broccoli', 'Orange'] },
+                { id: '13', question: 'How many hours in a day?', options: ['24', '12'] },
+                { id: '14', question: 'Is ice cold?', options: ['Yes', 'No'] },
+                { id: '15', question: 'What is 100 - 25?', options: ['75', '125'] },
+                { id: '16', question: 'Which is a bird?', options: ['Eagle', 'Dog'] },
+                { id: '17', question: 'How many months in a year?', options: ['12', '10'] },
+                { id: '18', question: 'Is fire hot?', options: ['Yes', 'No'] },
+                { id: '19', question: '8 ÷ 4 = ?', options: ['2', '4'] },
+                { id: '20', question: 'Which is a planet?', options: ['Earth', 'Sun'] },
+                { id: '21', question: 'What is 3 × 7?', options: ['21', '10'] },
+                { id: '22', question: 'Is snow white?', options: ['Yes', 'No'] },
+                { id: '23', question: 'Which is a reptile?', options: ['Snake', 'Cat'] },
+                { id: '24', question: 'How many minutes in an hour?', options: ['60', '100'] },
+                { id: '25', question: 'What is 50 + 50?', options: ['100', '0'] },
+                { id: '26', question: 'Is grass green?', options: ['Yes', 'No'] },
+                { id: '27', question: 'Which is a fish?', options: ['Salmon', 'Lion'] },
+                { id: '28', question: 'How many seconds in a minute?', options: ['60', '100'] },
+                { id: '29', question: 'What is 12 × 2?', options: ['24', '10'] },
+                { id: '30', question: 'Is chocolate sweet?', options: ['Yes', 'No'] },
+                { id: '31', question: 'Which is a mammal?', options: ['Human', 'Snake'] },
+                { id: '32', question: 'How many weeks in a month?', options: ['4', '7'] },
+                { id: '33', question: 'What is 100 ÷ 10?', options: ['10', '1'] },
+                { id: '34', question: 'Is lemon sour?', options: ['Yes', 'No'] },
+                { id: '35', question: 'Which is an insect?', options: ['Ant', 'Fish'] },
+                { id: '36', question: 'How many years in a decade?', options: ['10', '100'] },
+                { id: '37', question: 'What is 15 + 25?', options: ['40', '50'] },
+                { id: '38', question: 'Is paper flammable?', options: ['Yes', 'No'] },
+                { id: '39', question: 'Which is a tree?', options: ['Oak', 'Rose'] },
+                { id: '40', question: 'How many sides in a triangle?', options: ['3', '4'] },
+                { id: '41', question: 'What is 9 × 9?', options: ['81', '18'] },
+                { id: '42', question: 'Is gold a metal?', options: ['Yes', 'No'] },
+                { id: '43', question: 'Which is a continent?', options: ['Africa', 'Pacific'] },
+                { id: '44', question: 'How many legs on a spider?', options: ['8', '6'] },
+                { id: '45', question: 'What is 7 × 8?', options: ['56', '15'] },
+                { id: '46', question: 'Is sugar sweet?', options: ['Yes', 'No'] },
+                { id: '47', question: 'Which is an ocean?', options: ['Pacific', 'Sahara'] },
+                { id: '48', question: 'How many players in a soccer team?', options: ['11', '5'] },
+                { id: '49', question: 'What is 64 ÷ 8?', options: ['8', '7'] },
+                { id: '50', question: 'Is the moon a star?', options: ['No', 'Yes'] },
+                { id: '51', question: 'Which is a color?', options: ['Red', 'Square'] },
+                { id: '52', question: 'How many letters in the alphabet?', options: ['26', '24'] },
+                { id: '53', question: 'What is 25 × 4?', options: ['100', '29'] },
+                { id: '54', question: 'Is air invisible?', options: ['Yes', 'No'] },
+                { id: '55', question: 'Which is a sport?', options: ['Soccer', 'Eating'] },
+                { id: '56', question: 'How many hours in 2 days?', options: ['48', '24'] },
+                { id: '57', question: 'What is 99 - 9?', options: ['90', '108'] },
+                { id: '58', question: 'Is wood solid?', options: ['Yes', 'No'] },
+                { id: '59', question: 'Which is a vehicle?', options: ['Car', 'House'] },
+                { id: '60', question: 'How many minutes in 2 hours?', options: ['120', '60'] },
+                { id: '61', question: 'What is 12 + 13?', options: ['25', '1'] },
+                { id: '62', question: 'Is glass transparent?', options: ['Yes', 'No'] },
+                { id: '63', question: 'Which is a musical instrument?', options: ['Guitar', 'Book'] },
+                { id: '64', question: 'How many days in February (non-leap)?', options: ['28', '30'] },
+                { id: '65', question: 'What is 6 × 7?', options: ['42', '13'] },
+                { id: '66', question: 'Is salt salty?', options: ['Yes', 'No'] },
+                { id: '67', question: 'Which is a country?', options: ['Kenya', 'Mars'] },
+                { id: '68', question: 'How many wheels on a car?', options: ['4', '2'] },
+                { id: '69', question: 'What is 81 ÷ 9?', options: ['9', '8'] },
+                { id: '70', question: 'Is fire alive?', options: ['No', 'Yes'] },
+                { id: '71', question: 'Which is a season?', options: ['Winter', 'Monday'] },
+                { id: '72', question: 'How many quarters in a dollar?', options: ['4', '10'] },
+                { id: '73', question: 'What is 14 + 16?', options: ['30', '2'] },
+                { id: '74', question: 'Is water a liquid?', options: ['Yes', 'No'] },
+                { id: '75', question: 'Which is a city?', options: ['Kampala', 'Africa'] },
+                { id: '76', question: 'How many sides in a square?', options: ['4', '3'] },
+                { id: '77', question: 'What is 5 × 12?', options: ['60', '17'] },
+                { id: '78', question: 'Is rock hard?', options: ['Yes', 'No'] },
+                { id: '79', question: 'Which is a language?', options: ['English', 'Running'] },
+                { id: '80', question: 'How many cents in a dollar?', options: ['100', '10'] },
+                { id: '81', question: 'What is 100 ÷ 4?', options: ['25', '96'] },
+                { id: '82', question: 'Is light fast?', options: ['Yes', 'No'] },
+                { id: '83', question: 'Which is a flower?', options: ['Rose', 'Stone'] },
+                { id: '84', question: 'How many years in a century?', options: ['100', '1000'] },
+                { id: '85', question: 'What is 8 × 6?', options: ['48', '14'] },
+                { id: '86', question: 'Is oil liquid?', options: ['Yes', 'No'] },
+                { id: '87', question: 'Which is a job?', options: ['Teacher', 'Tree'] },
+                { id: '88', question: 'How many minutes in 3 hours?', options: ['180', '120'] },
+                { id: '89', question: 'What is 45 ÷ 5?', options: ['9', '40'] },
+                { id: '90', question: 'Is sand solid?', options: ['Yes', 'No'] },
+                { id: '91', question: 'Which is a river?', options: ['Nile', 'Himalayas'] },
+                { id: '92', question: 'How many days in a year?', options: ['365', '300'] },
+                { id: '93', question: 'What is 7 × 9?', options: ['63', '16'] },
+                { id: '94', question: 'Is steam gas?', options: ['Yes', 'No'] },
+                { id: '95', question: 'Which is a building?', options: ['School', 'Car'] },
+                { id: '96', question: 'How many seconds in 2 minutes?', options: ['120', '60'] },
+                { id: '97', question: 'What is 11 × 11?', options: ['121', '22'] },
+                { id: '98', question: 'Is metal conductive?', options: ['Yes', 'No'] },
+                { id: '99', question: 'Which is a mountain?', options: ['Everest', 'Amazon'] },
+                { id: '100', question: 'How many hours in 3 days?', options: ['72', '24'] }
             ];
             
-            // Generate more questions to reach 50
-            for (let i = 6; i <= 50; i++) {
-                questionList.push({
-                    id: i.toString(),
-                    question: `General Knowledge Question ${i}`,
-                    options: ['Option A', 'Option B', 'Option C', 'Option D'],
-                    correctAnswer: Math.floor(Math.random() * 4)
-                });
-            }
-            
-            return questionList;
+            return questions;
         }
     </script>
 </body>
