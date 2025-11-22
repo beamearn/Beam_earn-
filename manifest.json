@@ -7,10 +7,11 @@
   "scope": "/",
   "display": "standalone",
   "display_override": ["tabbed"],
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#3B82F6",
-  "orientation": "portrait-primary",
   "categories": ["finance", "business", "productivity"],
+
   "icons": [
     {
       "src": "icons/icon-192x192.png",
@@ -22,5 +23,8 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+
+  "prefer_related_applications": false,
+  "related_applications": []
 }
