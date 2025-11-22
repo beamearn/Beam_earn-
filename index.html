@@ -5,6 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beam Earn - Earn Money Daily</title>
     
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#7E57C2">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180x180.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167x167.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="icons/icon-192x192.png">
+    
+    <!-- Apple Splash Screen Images (optional but recommended) -->
+    <link rel="apple-touch-startup-image" href="splash/iphone5_splash.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="splash/iphone6_splash.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="splash/iphoneplus_splash.png" media="(device-width: 621px) and (device-height: 1104px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="splash/iphonex_splash.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="splash/ipad_splash.png" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)">
+    
+    <!-- Meta tags for PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Beam Earn">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="msapplication-TileColor" content="#7E57C2">
+    <meta name="msapplication-config" content="browserconfig.xml">
+    
     <!-- Add Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
@@ -36,6 +66,11 @@
             color: #333;
             line-height: 1.6;
             min-height: 100vh;
+            /* Add padding for standalone mode */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
         }
 
         .header {
@@ -46,6 +81,9 @@
             top: 0;
             width: 100%;
             z-index: 1000;
+            /* Safe area for notch devices */
+            padding-top: calc(1rem + env(safe-area-inset-top));
+            height: calc(80px + env(safe-area-inset-top));
         }
 
         .nav {
@@ -71,6 +109,9 @@
             margin-left: auto;
             margin-right: auto;
             padding-bottom: 80px;
+            /* Adjust for safe areas */
+            margin-top: calc(80px + env(safe-area-inset-top));
+            padding-bottom: calc(80px + env(safe-area-inset-bottom));
         }
 
         .card {
@@ -436,6 +477,8 @@
             padding: 0.8rem;
             box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
             z-index: 1000;
+            /* Safe area for home indicator */
+            padding-bottom: calc(0.8rem + env(safe-area-inset-bottom));
         }
 
         .nav-item {
@@ -581,6 +624,96 @@
             font-size: 1rem;
         }
 
+        /* PWA Install Prompt */
+        .install-prompt {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--white);
+            padding: 1rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 2000;
+            text-align: center;
+            max-width: 300px;
+            width: 90%;
+            display: none;
+        }
+
+        .install-prompt.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        .install-prompt-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .install-prompt-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .install-prompt-accept {
+            background: var(--primary);
+            color: white;
+        }
+
+        .install-prompt-dismiss {
+            background: var(--light);
+            color: var(--dark);
+        }
+
+        /* App Installed Message */
+        .app-installed-message {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--success);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 25px;
+            z-index: 2000;
+            text-align: center;
+            display: none;
+        }
+
+        .app-installed-message.show {
+            display: block;
+            animation: fadeInOut 3s ease;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            20%, 80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        /* Offline Indicator */
+        .offline-indicator {
+            position: fixed;
+            top: 80px;
+            left: 0;
+            width: 100%;
+            background: var(--warning);
+            color: white;
+            padding: 10px;
+            text-align: center;
+            z-index: 999;
+            display: none;
+        }
+
+        .offline-indicator.show {
+            display: block;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .stats-grid {
@@ -675,6 +808,26 @@
     </style>
 </head>
 <body>
+    <!-- Offline Indicator -->
+    <div class="offline-indicator" id="offlineIndicator">
+        ⚠️ You are currently offline
+    </div>
+
+    <!-- PWA Install Prompt -->
+    <div class="install-prompt" id="installPrompt">
+        <h4>📱 Install Beam Earn</h4>
+        <p>Install our app for better experience</p>
+        <div class="install-prompt-buttons">
+            <button class="install-prompt-btn install-prompt-dismiss" id="dismissInstall">Later</button>
+            <button class="install-prompt-btn install-prompt-accept" id="acceptInstall">Install</button>
+        </div>
+    </div>
+
+    <!-- App Installed Message -->
+    <div class="app-installed-message" id="appInstalledMessage">
+        🎉 Beam Earn installed successfully!
+    </div>
+
     <!-- Header -->
     <header class="header">
         <div class="nav">
@@ -997,6 +1150,7 @@
         // Data Management
         let currentUser = null;
         let userData = null;
+        let deferredPrompt = null;
         
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
@@ -1004,8 +1158,101 @@
             checkAuthStatus();
             updateCountdownTimer();
             generateWithdraws();
+            setupPWA();
             setInterval(updateCountdownTimer, 1000);
         });
+
+        // PWA Setup
+        function setupPWA() {
+            // Register Service Worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then((registration) => {
+                            console.log('Service Worker registered: ', registration);
+                            
+                            // Check for updates
+                            registration.addEventListener('updatefound', () => {
+                                const newWorker = registration.installing;
+                                console.log('New service worker found...');
+                                
+                                newWorker.addEventListener('statechange', () => {
+                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                        console.log('New content is available; please refresh.');
+                                        // You can show an update notification here
+                                    }
+                                });
+                            });
+                        })
+                        .catch((registrationError) => {
+                            console.log('Service Worker registration failed: ', registrationError);
+                        });
+                });
+            }
+
+            // Listen for beforeinstallprompt event
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                
+                // Show install prompt after 5 seconds if not in standalone mode
+                if (!window.matchMedia('(display-mode: standalone)').matches) {
+                    setTimeout(() => {
+                        showInstallPrompt();
+                    }, 5000);
+                }
+            });
+
+            // Listen for app installed event
+            window.addEventListener('appinstalled', () => {
+                console.log('Beam Earn was installed');
+                deferredPrompt = null;
+                showAppInstalledMessage();
+            });
+
+            // Online/Offline detection
+            window.addEventListener('online', () => {
+                document.getElementById('offlineIndicator').classList.remove('show');
+                console.log('App is online');
+            });
+
+            window.addEventListener('offline', () => {
+                document.getElementById('offlineIndicator').classList.add('show');
+                console.log('App is offline');
+            });
+
+            // Initial online status check
+            if (!navigator.onLine) {
+                document.getElementById('offlineIndicator').classList.add('show');
+            }
+        }
+
+        function showInstallPrompt() {
+            const installPrompt = document.getElementById('installPrompt');
+            installPrompt.classList.add('show');
+            
+            document.getElementById('acceptInstall').addEventListener('click', async () => {
+                installPrompt.classList.remove('show');
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`User response to the install prompt: ${outcome}`);
+                    deferredPrompt = null;
+                }
+            });
+            
+            document.getElementById('dismissInstall').addEventListener('click', () => {
+                installPrompt.classList.remove('show');
+            });
+        }
+
+        function showAppInstalledMessage() {
+            const message = document.getElementById('appInstalledMessage');
+            message.classList.add('show');
+            setTimeout(() => {
+                message.classList.remove('show');
+            }, 3000);
+        }
 
         function setupEventListeners() {
             // Header login button
