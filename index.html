@@ -6,7 +6,7 @@
     <title>Beam Earn - Earn Money Daily</title>
     
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="manifest.json">
     
     <!-- Theme Color -->
     <meta name="theme-color" content="#7E57C2">
@@ -928,7 +928,17 @@
                 <p><em>Example: Withdraw 5,000 UGX → Receive 4,000 UGX</em></p>
             </div>
 
-            <!-- VIP Levels -->
+            <!-- Quick Actions -->
+            <div class="card">
+                <h3 style="color: var(--primary); margin-bottom: 1rem;">Quick Actions</h3>
+                <button class="btn btn-primary mb-1" id="showTasksBtn">📋 Answer Questions</button>
+                <button class="btn btn-success mb-1" id="showWalletBtn">💰 Wallet & Withdraw</button>
+                <button class="btn btn-warning" id="showSupportBtn">🛟 Contact Support</button>
+            </div>
+        </section>
+
+        <!-- VIP Section -->
+        <section id="vip" class="hidden">
             <div class="card">
                 <h2 style="color: var(--primary); text-align: center; margin-bottom: 1.5rem;">🌟 Investment Levels</h2>
                 <div class="level-grid">
@@ -984,14 +994,6 @@
                         <button class="btn btn-danger" id="upgradeS3Btn">Upgrade to S3</button>
                     </div>
                 </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="card">
-                <h3 style="color: var(--primary); margin-bottom: 1rem;">Quick Actions</h3>
-                <button class="btn btn-primary mb-1" id="showTasksBtn">📋 Answer Questions</button>
-                <button class="btn btn-success mb-1" id="showWalletBtn">💰 Wallet & Withdraw</button>
-                <button class="btn btn-warning" id="showSupportBtn">🛟 Contact Support</button>
             </div>
         </section>
 
@@ -1107,6 +1109,10 @@
         <a class="nav-item" id="navWallet">
             <span>💰</span>
             <span>Wallet</span>
+        </a>
+        <a class="nav-item" id="navVip">
+            <span>⭐</span>
+            <span>VIP</span>
         </a>
         <a class="nav-item" id="navSupport">
             <span>🛟</span>
@@ -1283,6 +1289,9 @@
                 showSection('wallet');
                 loadTransactionHistory();
             });
+            document.getElementById('navVip').addEventListener('click', function() {
+                showSection('vip');
+            });
             document.getElementById('navSupport').addEventListener('click', function() {
                 showSection('support');
             });
@@ -1394,7 +1403,8 @@
                 'dashboard': 0,
                 'tasks': 1,
                 'wallet': 2,
-                'support': 3
+                'vip': 3,
+                'support': 4
             };
             
             if (sectionMap[sectionId] !== undefined) {
@@ -1822,7 +1832,7 @@
                         📱 Airtel Money
                     </div>
                     <div class="payment-tab" id="mtnTab">
-                         MTN Money
+                        💛 MTN Money
                     </div>
                 </div>
 
@@ -1831,36 +1841,21 @@
                     
                     <div class="payment-step">
                         <div class="step-number">1</div>
-                        <div class="step-text">Dial <span class="step-highlight">*185#</span></div>
+                        <div class="step-text">Dial <span class="step-highlight">*185*9#</span></div>
                     </div>
                     
                     <div class="payment-step">
                         <div class="step-number">2</div>
-                        <div class="step-text">Choose option <span class="step-highlight">4 – Payments</span></div>
+                        <div class="step-text">Enter Merchant Code: <span class="step-highlight">6911104</span></div>
                     </div>
                     
                     <div class="payment-step">
                         <div class="step-number">3</div>
-                        <div class="step-text">Choose option <span class="step-highlight">1 – Goods and Services</span></div>
+                        <div class="step-text">Enter Amount: <span class="step-highlight">${amount.toLocaleString()} UGX</span></div>
                     </div>
                     
                     <div class="payment-step">
                         <div class="step-number">4</div>
-                        <div class="step-text">Enter the Merchant Code: <span class="step-highlight">6911104</span></div>
-                    </div>
-                    
-                    <div class="payment-step">
-                        <div class="step-number">5</div>
-                        <div class="step-text">Enter the Amount: <span class="step-highlight">${amount.toLocaleString()} UGX</span></div>
-                    </div>
-                    
-                    <div class="payment-step">
-                        <div class="step-number">6</div>
-                        <div class="step-text">Enter Reference <span class="step-highlight">(if asked)</span></div>
-                    </div>
-                    
-                    <div class="payment-step">
-                        <div class="step-number">7</div>
                         <div class="step-text">Enter your <span class="step-highlight">PIN to confirm</span></div>
                     </div>
                     
@@ -1872,38 +1867,32 @@
                 <div id="mtnInstructions" class="payment-instructions">
                     <h4>💛 How to Pay via MTN Mobile Money:</h4>
                     
+                    <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-weight: bold;">
+                        🚨 For better service, we recommend using an Airtel line for payments. MTN is currently under maintenance.
+                    </div>
+                    
                     <div class="payment-step">
                         <div class="step-number">1</div>
-                        <div class="step-text">Dial <span class="step-highlight">*165#</span></div>
+                        <div class="step-text">Dial <span class="step-highlight">*165*3#</span></div>
                     </div>
                     
                     <div class="payment-step">
                         <div class="step-number">2</div>
-                        <div class="step-text">Choose option <span class="step-highlight">3 – Payments</span></div>
+                        <div class="step-text">Choose <span class="step-highlight">1 – Send Money</span></div>
                     </div>
                     
                     <div class="payment-step">
                         <div class="step-number">3</div>
-                        <div class="step-text">Choose option <span class="step-highlight">1 – Goods and Services</span></div>
+                        <div class="step-text">Enter Merchant Code: <span class="step-highlight">6911104</span></div>
                     </div>
                     
                     <div class="payment-step">
                         <div class="step-number">4</div>
-                        <div class="step-text">Enter the Merchant Code: <span class="step-highlight">6911104</span></div>
+                        <div class="step-text">Enter Amount: <span class="step-highlight">${amount.toLocaleString()} UGX</span></div>
                     </div>
                     
                     <div class="payment-step">
                         <div class="step-number">5</div>
-                        <div class="step-text">Enter the Amount: <span class="step-highlight">${amount.toLocaleString()} UGX</span></div>
-                    </div>
-                    
-                    <div class="payment-step">
-                        <div class="step-number">6</div>
-                        <div class="step-text">Enter Reference <span class="step-highlight">(reason or your name)</span></div>
-                    </div>
-                    
-                    <div class="payment-step">
-                        <div class="step-number">7</div>
                         <div class="step-text">Enter your <span class="step-highlight">PIN to confirm</span></div>
                     </div>
                     
